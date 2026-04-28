@@ -16,6 +16,7 @@ import java.util.List;
 @Table(name = "users")
 @Data
 @NoArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User implements UserDetails {
 
     @Id
@@ -45,19 +46,19 @@ public class User implements UserDetails {
     @JoinColumn(name = "department_id")
     private Department department;
 
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    // private LocalDateTime createdAt;
+    // private LocalDateTime updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    // @PrePersist
+    // protected void onCreate() {
+    //     createdAt = LocalDateTime.now();
+    //     updatedAt = LocalDateTime.now();
+    // }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
+    // @PreUpdate
+    // protected void onUpdate() {
+    //     updatedAt = LocalDateTime.now();
+    // }
 
     // UserDetails methods
     @Override

@@ -100,12 +100,20 @@ const Navbar = () => {
                 </Link>
 
                 <div className="flex space-x-2 items-center">
+
                     {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
-                        <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
+                        <>
+                            <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
+                            <Link to="/admin/manage-types" className="navbar-link">Manage Types</Link>
+                            <Link to="/admin/manage-slots" className="navbar-link">Manage Slots</Link>
+                            <Link to="/admin/view-bookings" className="navbar-link">View Bookings</Link>
+                        </>
                     ) : (
                         <>
                             <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
                             <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
+                            <Link to="/book-appointment" className="navbar-link">Appointment Booking</Link>
+                            <Link to="/student/my-bookings" className="navbar-link">My Bookings</Link>
                         </>
                     )}
 
