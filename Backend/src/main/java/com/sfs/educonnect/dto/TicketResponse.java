@@ -1,6 +1,5 @@
 package com.sfs.educonnect.dto;
 
-import com.sfs.educonnect.enums.TicketStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;

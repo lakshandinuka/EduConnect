@@ -3,10 +3,12 @@ package com.sfs.educonnect.service;
 import com.sfs.educonnect.dto.AuthResponse;
 import com.sfs.educonnect.dto.LoginRequest;
 import com.sfs.educonnect.dto.RegisterRequest;
+import com.sfs.educonnect.entity.Admin;
 import com.sfs.educonnect.entity.Department;
 import com.sfs.educonnect.entity.User;
 import com.sfs.educonnect.enums.Role;
 import com.sfs.educonnect.repository.DepartmentRepository;
+import com.sfs.educonnect.repository.AdminRepository;
 import com.sfs.educonnect.repository.UserRepository;
 import com.sfs.educonnect.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,9 @@ public class AuthService {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private AdminRepository adminRepository;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -67,9 +72,6 @@ public class AuthService {
 
         user = userRepository.save(user);
 
-        // Generate token after registration (optional – many apps require login after
-        // reg)
-        // We'll return a token for convenience.
         String token = jwtUtil.generateToken(user, user.getId(), user.getRole().name(),
                 user.getDepartment() != null ? user.getDepartment().getId() : null);
 
@@ -79,18 +81,31 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+        // 1. Try to find in User table (BCrypt)
+        java.util.Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            if (passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+                String token = jwtUtil.generateToken(user, user.getId(), user.getRole().name(),
+                        user.getDepartment() != null ? user.getDepartment().getId() : null);
+                return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(),
+                        user.getFullName(), user.getRole(),
+                        user.getDepartment() != null ? user.getDepartment().getId() : null);
+            }
+        }
 
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        // 2. Try to find in Admin table (Plain Text)
+        java.util.Optional<Admin> adminOpt = adminRepository.findByUsername(request.getEmail());
+        if (adminOpt.isPresent()) {
+            Admin admin = adminOpt.get();
+            if (request.getPassword().equals(admin.getPassword())) {
+                // Admin role is "ADMIN"
+                String token = jwtUtil.generateToken(admin, admin.getId(), "ADMIN", null);
+                return new AuthResponse(token, "Bearer", admin.getId(), admin.getUsername(),
+                        "Admin", Role.ADMIN, null);
+            }
+        }
 
-        String token = jwtUtil.generateToken(user, user.getId(), user.getRole().name(),
-                user.getDepartment() != null ? user.getDepartment().getId() : null);
-
-        return new AuthResponse(token, "Bearer", user.getId(), user.getEmail(),
-                user.getFullName(), user.getRole(),
-                user.getDepartment() != null ? user.getDepartment().getId() : null);
+        throw new RuntimeException("Invalid email or password");
     }
-}
+}

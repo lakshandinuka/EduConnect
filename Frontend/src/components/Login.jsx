@@ -110,6 +110,7 @@ const Login = () => {
                         Send a Registration Request
                     </a>
                 </p>
+
             </div>
         </div>
     );

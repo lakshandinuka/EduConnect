@@ -11,6 +11,9 @@ import TicketDetail from './components/Admin/TicketDetail';
 import StudentTicketDetail from './components/Student/TicketDetail';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 
+// Announcements project components
+import AnnouncementStudentView from './components/Student/StudentView';
+import AnnouncementAdminDashboard from './components/Admin/AnnouncementDashboard';
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   const { user, loading } = useAuth();
@@ -82,6 +85,14 @@ function App() {
           }
           />
           <Route path="/" element={<Navigate to="/login" />} />
+
+          {/* Announcements Routes */}
+          <Route path="/announcements" element={<AnnouncementStudentView />} />
+          <Route path="/admin/announcements" element={
+            <ProtectedRoute requiredRoles={['ADMIN', 'SUPER_ADMIN']}>
+              <AnnouncementAdminDashboard />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

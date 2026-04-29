@@ -44,9 +44,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/admin/login", "/api/admin/register").permitAll()
+                        .requestMatchers("/api/announcements/**", "/api/messages/**").permitAll()
                         .requestMatchers("/api/departments/**").permitAll() // hasAnyRole("SUPER_ADMIN", "DEPT_ADMIN")
                         .requestMatchers("/api/tickets/**").authenticated()
-                        .requestMatchers("/api/admin/**").hasAnyRole("SUPER_ADMIN", "DEPT_ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyRole("SUPER_ADMIN", "DEPT_ADMIN", "ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

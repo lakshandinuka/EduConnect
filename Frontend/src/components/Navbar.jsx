@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // Inject navbar styles once
 if (typeof document !== 'undefined' && !document.getElementById('navbar-style')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'navbar-style';
-    styleEl.textContent = `
+  const styleEl = document.createElement('style');
+  styleEl.id = 'navbar-style';
+  styleEl.textContent = `
         .navbar-root {
             background: linear-gradient(90deg, #0f1f3d 0%, #0a1628 60%, #071020 100%);
             border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -80,49 +80,84 @@ if (typeof document !== 'undefined' && !document.getElementById('navbar-style'))
             margin: 0 4px;
         }
     `;
-    document.head.appendChild(styleEl);
+  document.head.appendChild(styleEl);
 }
 
 const Navbar = () => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [adminNotif, setAdminNotif] = useState(false);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+  useEffect(() => {
+    const admin = localStorage.getItem("adminNotif");
+    if (admin === "true") setAdminNotif(true);
+  }, []);
 
-    return (
-        <nav className="navbar-root">
-            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-                <Link to="/dashboard" className="navbar-brand">
-                    SFS EDUConnect
-                </Link>
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-                <div className="flex space-x-2 items-center">
-                    {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
-                        <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
-                    ) : (
-                        <>
-                            <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
-                            <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
-                        </>
-                    )}
+  return (
+    <nav className="navbar-root">
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+        <Link to="/dashboard" className="navbar-brand">
+          SFS EDUConnect
+        </Link>
 
-                    {user?.role === 'SUPER_ADMIN' && (
-                        <>
-                            <Link to="/analytics" className="navbar-link">Analytics</Link>
-                            <Link to="/register" className="navbar-link">Register New User</Link>
-                        </>
-                    )}
+        <div className="flex space-x-2 items-center">
 
-                    <div className="navbar-divider" />
-                    <span className="navbar-greeting">Hello, {user?.fullName}</span>
-                    <button onClick={handleLogout} className="navbar-logout">Logout</button>
-                </div>
-            </div>
-        </nav>
-    );
+          {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+            <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
+          ) : (
+            <>
+              <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
+              <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
+              <Link to="/announcements" className="navbar-link">Announcements</Link>
+            </>
+          )}
+
+          {/* Announcement Admin Panel */}
+          {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+            <Link
+              to="/admin/announcements"
+              className="navbar-link"
+              style={{ position: 'relative' }}
+              onClick={() => {
+                localStorage.setItem("adminNotif", "false");
+                setAdminNotif(false);
+              }}
+            >
+              Admin Panel
+              {adminNotif && (
+                <span style={{
+                  position: 'absolute',
+                  top: '2px',
+                  right: '2px',
+                  width: '8px',
+                  height: '8px',
+                  background: '#ef4444',
+                  borderRadius: '50%',
+                  border: '1px solid white'
+                }}></span>
+              )}
+            </Link>
+          )}
+
+          {user?.role === 'SUPER_ADMIN' && (
+            <>
+              <Link to="/analytics" className="navbar-link">Analytics</Link>
+              <Link to="/register" className="navbar-link">Register New User</Link>
+            </>
+          )}
+
+          <div className="navbar-divider" />
+          <span className="navbar-greeting">Hello, {user?.fullName || 'Admin'}</span>
+          <button onClick={handleLogout} className="navbar-logout">Logout</button>
+        </div>
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

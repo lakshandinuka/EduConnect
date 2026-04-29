@@ -24,6 +24,8 @@ const Dashboard = () => {
         case 'SUPER_ADMIN':
             roleMessage = 'Welcome, Super Admin. You have full access to all tickets and approvals.';
             break;
+        case 'ADMIN':
+            return <Navigate to="/admin/announcements" replace />;
         default:
             roleMessage = 'Dashboard';
     }
