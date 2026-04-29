@@ -31,23 +31,29 @@ public class AdminTicketController {
     private JwtUtil jwtUtil;
 
     private User getCurrentUser(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid or missing token");
+        }
         String token = authHeader.substring(7);
         Long userId = jwtUtil.extractUserId(token);
-        return userService.findById(userId);
+        return userService.findById(userId); // must load full User (role, department)
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('DEPT_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<?> getTickets(
-            @AuthenticationPrincipal User admin,
-            @RequestParam(required = false) String status) { // optional
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(required = false) String status) {
         try {
+            User admin = getCurrentUser(authHeader); // your existing helper
             TicketStatus ticketStatus = null;
             if (status != null && !status.isEmpty()) {
                 ticketStatus = TicketStatus.valueOf(status.toUpperCase());
             }
             List<TicketResponse> tickets = ticketService.getTicketsForAdmin(admin, ticketStatus);
             return ResponseEntity.ok(tickets);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid status value: " + status);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -120,9 +126,7 @@ public class AdminTicketController {
             @PathVariable Long ticketId) {
         try {
             User admin = getCurrentUser(authHeader);
-
             TicketResponse response = ticketService.getTicketByIdForAdmin(ticketId, admin);
-
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Access denied")) {

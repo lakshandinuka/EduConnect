@@ -98,12 +98,32 @@ const Navbar = () => {
     navigate('/login');
   };
 
+<<<<<<< HEAD
   return (
     <nav className="navbar-root">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link to="/dashboard" className="navbar-brand">
           SFS EDUConnect
         </Link>
+=======
+                <div className="flex space-x-2 items-center">
+
+                    {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+                        <>
+                            <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
+                            <Link to="/admin/manage-types" className="navbar-link">Manage Types</Link>
+                            <Link to="/admin/manage-slots" className="navbar-link">Manage Slots</Link>
+                            <Link to="/admin/view-bookings" className="navbar-link">View Bookings</Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
+                            <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
+                            <Link to="/book-appointment" className="navbar-link">Appointment Booking</Link>
+                            <Link to="/student/my-bookings" className="navbar-link">My Bookings</Link>
+                        </>
+                    )}
+>>>>>>> a7f41a9eb514094c9ed3e8d3e0efc2868a966dba
 
         <div className="flex space-x-2 items-center">
 

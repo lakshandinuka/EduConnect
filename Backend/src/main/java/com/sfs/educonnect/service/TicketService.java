@@ -90,8 +90,8 @@ public class TicketService {
         }
 
         // Only allow adding attachments if ticket is not yet resolved/approved
-        if (!TicketStatus.OPEN.name().equals(ticket.getStatus())
-                && !TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus())) {
+        if (ticket.getTicketStatus() != TicketStatus.OPEN
+                && ticket.getTicketStatus() != TicketStatus.IN_PROGRESS) {
             throw new RuntimeException("Cannot add attachments to a ticket that is already resolved or closed");
         }
 
@@ -116,7 +116,7 @@ public class TicketService {
         }
 
         // Allow deletion only if status is OPEN (unsolved)
-        if (!TicketStatus.OPEN.name().equals(ticket.getStatus())) {
+        if (ticket.getTicketStatus() != TicketStatus.OPEN) {
             throw new RuntimeException("Cannot delete a ticket that has already been processed");
         }
 
@@ -133,7 +133,7 @@ public class TicketService {
         response.setInquiryTypeName(ticket.getInquiryType().getName());
         response.setDepartmentName(ticket.getDepartment().getName());
         response.setInquiryText(ticket.getInquiryText());
-        response.setStatus(ticket.getStatus());
+        response.setStatus(ticket.getTicketStatus().name());
         response.setCreatedAt(ticket.getCreatedAt());
         response.setUpdatedAt(ticket.getUpdatedAt());
 
@@ -170,13 +170,14 @@ public class TicketService {
         List<Ticket> tickets;
         if (admin.getRole() == Role.SUPER_ADMIN) {
             if (status != null) {
-                tickets = ticketRepository.findAllByStatusOrderByCreatedAtDesc(status);
+                tickets = ticketRepository.findAllByTicketStatusOrderByCreatedAtDesc(status);
             } else {
                 tickets = ticketRepository.findAllByOrderByCreatedAtDesc();
             }
         } else if (admin.getRole() == Role.DEPT_ADMIN && admin.getDepartment() != null) {
             if (status != null) {
-                tickets = ticketRepository.findByDepartmentAndStatusOrderByCreatedAtDesc(admin.getDepartment(), status);
+                tickets = ticketRepository.findByDepartmentAndTicketStatusOrderByCreatedAtDesc(admin.getDepartment(),
+                        status);
             } else {
                 tickets = ticketRepository.findByDepartmentOrderByCreatedAtDesc(admin.getDepartment());
             }
@@ -233,8 +234,8 @@ public class TicketService {
             throw new RuntimeException("Only department admin can submit for approval");
         }
 
-        if (!TicketStatus.IN_PROGRESS.name().equals(ticket.getStatus())
-                && !TicketStatus.OPEN.name().equals(ticket.getStatus())) {
+        if (ticket.getTicketStatus() != TicketStatus.IN_PROGRESS
+                && ticket.getTicketStatus() != TicketStatus.OPEN) {
             throw new RuntimeException("Ticket must be in progress to submit for approval");
         }
 
@@ -257,7 +258,7 @@ public class TicketService {
             throw new RuntimeException("Only super admin can approve tickets");
         }
 
-        if (!TicketStatus.RESOLVED.name().equals(ticket.getStatus())) {
+        if (ticket.getTicketStatus() != TicketStatus.RESOLVED) {
             throw new RuntimeException("Only tickets in RESOLVED status can be approved");
         }
 
@@ -280,7 +281,7 @@ public class TicketService {
             throw new RuntimeException("Only super admin can reject tickets");
         }
 
-        if (!TicketStatus.RESOLVED.name().equals(ticket.getStatus())) {
+        if (ticket.getTicketStatus() != TicketStatus.RESOLVED) {
             throw new RuntimeException("Only tickets in RESOLVED status can be rejected");
         }
 

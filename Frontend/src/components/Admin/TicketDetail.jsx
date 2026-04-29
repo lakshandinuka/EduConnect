@@ -18,6 +18,10 @@ const TicketDetail = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [noteType, setNoteType] = useState('public');
 
+    console.log('status:', status);
+
+
+
     useEffect(() => {
         fetchTicket();
         fetchDepartments();
