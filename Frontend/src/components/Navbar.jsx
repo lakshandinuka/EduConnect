@@ -56,7 +56,6 @@ if (typeof document !== 'undefined' && !document.getElementById('navbar-style'))
             color: #ffffff;
             font-size: 13px;
             padding: 0 4px;
-            letter-spacing: 0.01em;
         }
         .navbar-logout {
             background: rgba(239,68,68,0.15);
@@ -67,11 +66,9 @@ if (typeof document !== 'undefined' && !document.getElementById('navbar-style'))
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            transition: background 0.2s, border-color 0.2s;
         }
         .navbar-logout:hover {
             background: rgb(255, 0, 0);
-            border-color: rgb(0, 0, 0);
         }
         .navbar-divider {
             width: 1px;
@@ -101,22 +98,25 @@ const Navbar = () => {
     return (
         <nav className="navbar-root">
             <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+
                 <Link to="/dashboard" className="navbar-brand">
                     SFS EDUConnect
                 </Link>
 
-
                 <div className="flex space-x-2 items-center">
 
-                    {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
+                    {/* ADMIN (DEPT + SUPER) */}
+                    {(user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN') && (
                         <>
                             <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
                             <Link to="/admin/manage-types" className="navbar-link">Manage Types</Link>
                             <Link to="/admin/manage-slots" className="navbar-link">Manage Slots</Link>
                             <Link to="/admin/view-bookings" className="navbar-link">View Bookings</Link>
                         </>
+                    )}
 
-                    ) : (
+                    {/* STUDENT */}
+                    {user?.role === 'STUDENT' && (
                         <>
                             <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
                             <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
@@ -126,7 +126,7 @@ const Navbar = () => {
                         </>
                     )}
 
-                    {/* Announcement Admin Panel */}
+                    {/* ANNOUNCEMENT ADMIN */}
                     {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
                         <Link
                             to="/admin/announcements"
@@ -138,33 +138,29 @@ const Navbar = () => {
                             }}
                         >
                             Admin Panel
-                            {adminNotif && (
-                                <span style={{
-                                    position: 'absolute',
-                                    top: '2px',
-                                    right: '2px',
-                                    width: '8px',
-                                    height: '8px',
-                                    background: '#ef4444',
-                                    borderRadius: '50%',
-                                    border: '1px solid white'
-                                }}></span>
-                            )}
                         </Link>
                     )}
 
+                    {/* SUPER ADMIN ONLY */}
                     {user?.role === 'SUPER_ADMIN' && (
                         <>
+                            <Link to="/admin/sla" className="navbar-link">SLA Policies</Link>
                             <Link to="/analytics" className="navbar-link">Analytics</Link>
                             <Link to="/register" className="navbar-link">Register New User</Link>
                         </>
                     )}
 
                     <div className="navbar-divider" />
-                    <span className="navbar-greeting">Hello, {user?.fullName || 'Admin'}</span>
-                    <button onClick={handleLogout} className="navbar-logout">Logout</button>
-                </div>
 
+                    <span className="navbar-greeting">
+                        Hello, {user?.fullName || 'Admin'}
+                    </span>
+
+                    <button onClick={handleLogout} className="navbar-logout">
+                        Logout
+                    </button>
+
+                </div>
             </div>
         </nav>
     );

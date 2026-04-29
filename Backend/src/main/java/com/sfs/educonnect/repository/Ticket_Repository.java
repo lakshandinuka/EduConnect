@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @Repository
-public interface Ticket_Repository extends JpaRepository<Ticket, String> {
+public interface Ticket_Repository extends JpaRepository<Ticket, Long> {
 
     @Query(value = "SELECT COUNT(*) as totalTickets FROM tickets", nativeQuery = true)
     Map<String, Object> getTotalTickets();
