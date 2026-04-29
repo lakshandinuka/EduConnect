@@ -104,6 +104,8 @@ const Navbar = () => {
                 <Link to="/dashboard" className="navbar-brand">
                     SFS EDUConnect
                 </Link>
+
+
                 <div className="flex space-x-2 items-center">
 
                     {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
@@ -113,66 +115,56 @@ const Navbar = () => {
                             <Link to="/admin/manage-slots" className="navbar-link">Manage Slots</Link>
                             <Link to="/admin/view-bookings" className="navbar-link">View Bookings</Link>
                         </>
+
                     ) : (
                         <>
                             <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
                             <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
+                            <Link to="/announcements" className="navbar-link">Announcements</Link>
                             <Link to="/book-appointment" className="navbar-link">Appointment Booking</Link>
                             <Link to="/student/my-bookings" className="navbar-link">My Bookings</Link>
                         </>
                     )}
 
-                    <div className="flex space-x-2 items-center">
+                    {/* Announcement Admin Panel */}
+                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                        <Link
+                            to="/admin/announcements"
+                            className="navbar-link"
+                            style={{ position: 'relative' }}
+                            onClick={() => {
+                                localStorage.setItem("adminNotif", "false");
+                                setAdminNotif(false);
+                            }}
+                        >
+                            Admin Panel
+                            {adminNotif && (
+                                <span style={{
+                                    position: 'absolute',
+                                    top: '2px',
+                                    right: '2px',
+                                    width: '8px',
+                                    height: '8px',
+                                    background: '#ef4444',
+                                    borderRadius: '50%',
+                                    border: '1px solid white'
+                                }}></span>
+                            )}
+                        </Link>
+                    )}
 
-                        {user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN' ? (
-                            <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
-                        ) : (
-                            <>
-                                <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
-                                <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
-                                <Link to="/announcements" className="navbar-link">Announcements</Link>
-                            </>
-                        )}
+                    {user?.role === 'SUPER_ADMIN' && (
+                        <>
+                            <Link to="/analytics" className="navbar-link">Analytics</Link>
+                            <Link to="/register" className="navbar-link">Register New User</Link>
+                        </>
+                    )}
 
-                        {/* Announcement Admin Panel */}
-                        {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                            <Link
-                                to="/admin/announcements"
-                                className="navbar-link"
-                                style={{ position: 'relative' }}
-                                onClick={() => {
-                                    localStorage.setItem("adminNotif", "false");
-                                    setAdminNotif(false);
-                                }}
-                            >
-                                Admin Panel
-                                {adminNotif && (
-                                    <span style={{
-                                        position: 'absolute',
-                                        top: '2px',
-                                        right: '2px',
-                                        width: '8px',
-                                        height: '8px',
-                                        background: '#ef4444',
-                                        borderRadius: '50%',
-                                        border: '1px solid white'
-                                    }}></span>
-                                )}
-                            </Link>
-                        )}
-
-                        {user?.role === 'SUPER_ADMIN' && (
-                            <>
-                                <Link to="/analytics" className="navbar-link">Analytics</Link>
-                                <Link to="/register" className="navbar-link">Register New User</Link>
-                            </>
-                        )}
-
-                        <div className="navbar-divider" />
-                        <span className="navbar-greeting">Hello, {user?.fullName || 'Admin'}</span>
-                        <button onClick={handleLogout} className="navbar-logout">Logout</button>
-                    </div>
+                    <div className="navbar-divider" />
+                    <span className="navbar-greeting">Hello, {user?.fullName || 'Admin'}</span>
+                    <button onClick={handleLogout} className="navbar-logout">Logout</button>
                 </div>
+
             </div>
         </nav>
     );

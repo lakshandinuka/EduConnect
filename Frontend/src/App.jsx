@@ -10,18 +10,15 @@ import AdminDashboard from './components/Admin/AdminDashboard';
 import TicketDetail from './components/Admin/TicketDetail';
 import StudentTicketDetail from './components/Student/TicketDetail';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
-<<<<<<< HEAD
 
 // Announcements project components
 import AnnouncementStudentView from './components/Student/StudentView';
 import AnnouncementAdminDashboard from './components/Admin/AnnouncementDashboard';
-=======
 import BookAppointment from './components/Student/BookAppointment';
 import MyBookings from './components/Student/MyBookings';
 import ManageTypes from './components/Admin/ManageTypes';
 import ManageSlots from './components/Admin/ManageSlots';
 import ViewBookings from './components/Admin/ViewBookings';
->>>>>>> a7f41a9eb514094c9ed3e8d3e0efc2868a966dba
 // Protected route wrapper
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   const { user, loading } = useAuth();
