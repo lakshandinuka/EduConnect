@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import Login from './components/Login';
@@ -27,6 +27,21 @@ import SLAListPage from './components/Admin/SLA/SLAListPage';
 import SLAFormPage from './components/Admin/SLA/SLAFormPage';
 import SLAViewPage from './components/Admin/SLA/SLAViewPage';
 
+import HomePage from './pages/HomePage';
+import AboutPage from './pages/AboutPage';
+import KBHomePage from './pages/KBHomePage';
+import SearchPage from './pages/SearchPage';
+import CategoryPage from './pages/CategoryPage';
+import KBItemPage from './pages/KBItemPage';
+import FAQPage from './pages/FAQPage';
+import AdminKBListPage from './pages/AdminKBListPage';
+import AdminCreateEditPage from './pages/AdminCreateEditPage';
+import AdminCategoriesPage from './pages/AdminCategoriesPage';
+import AdminPoliciesPage from './pages/AdminPoliciesPage';
+import AdminPreviewPage from './pages/AdminPreviewPage';
+import AdminFAQPage from './pages/AdminFAQPage';
+import ChatbotWidget from './components/kb/ChatbotWidget';
+
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   const { user, loading } = useAuth();
 
@@ -40,15 +55,127 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   return children;
 };
 
-function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" />} />
+function AppRoutes() {
+  const location = useLocation();
+  const showChat = location.pathname.startsWith('/kb');
 
+  return (
+    <>
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+
+          <Route
+            path="/kb"
+            element={
+              <ProtectedRoute>
+                <KBHomePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/kb/search"
+            element={
+              <ProtectedRoute>
+                <SearchPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/kb/category/:categoryId"
+            element={
+              <ProtectedRoute>
+                <CategoryPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/kb/item/:itemId"
+            element={
+              <ProtectedRoute>
+                <KBItemPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/kb/faq"
+            element={
+              <ProtectedRoute>
+                <FAQPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/kb"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminKBListPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/kb/new"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminCreateEditPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/kb/edit/:itemId"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminCreateEditPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/kb/categories"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminCategoriesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/kb/policies"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminPoliciesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/kb/preview"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminPreviewPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/faqs"
+            element={
+              <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
+                <AdminFAQPage />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/dashboard"
@@ -214,6 +341,17 @@ function App() {
             }
           />
         </Routes>
+
+        {showChat && <ChatbotWidget />}
+    </>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
       </Router>
     </AuthProvider>
   );

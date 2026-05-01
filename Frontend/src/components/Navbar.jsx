@@ -76,6 +76,33 @@ if (typeof document !== 'undefined' && !document.getElementById('navbar-style'))
             background: rgba(255,255,255,0.1);
             margin: 0 4px;
         }
+        .navbar-kb-menu {
+            position: relative;
+            display: inline-flex;
+        }
+        .navbar-kb-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            min-width: 220px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: #0a1628;
+            box-shadow: 0 18px 36px rgba(0,0,0,0.32);
+            z-index: 60;
+        }
+        .navbar-kb-menu:hover .navbar-kb-dropdown,
+        .navbar-kb-menu:focus-within .navbar-kb-dropdown {
+            display: grid;
+            gap: 4px;
+        }
+        .navbar-kb-dropdown .navbar-link {
+            display: block;
+            white-space: nowrap;
+            padding: 8px 10px;
+        }
     `;
     document.head.appendChild(styleEl);
 }
@@ -104,6 +131,18 @@ const Navbar = () => {
                 </Link>
 
                 <div className="flex space-x-2 items-center">
+
+                    <div className="navbar-kb-menu">
+                        <Link to="/kb" className="navbar-link">Knowledgebase</Link>
+                        {user?.role === 'SUPER_ADMIN' && (
+                            <div className="navbar-kb-dropdown">
+                                <Link to="/admin/kb" className="navbar-link">Admin Knowledgebase</Link>
+                                <Link to="/admin/faqs" className="navbar-link">Admin FAQ</Link>
+                                <Link to="/admin/kb/categories" className="navbar-link">Categories</Link>
+                                <Link to="/admin/kb/policies" className="navbar-link">Policies</Link>
+                            </div>
+                        )}
+                    </div>
 
                     {/* ADMIN (DEPT + SUPER) */}
                     {(user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN') && (
