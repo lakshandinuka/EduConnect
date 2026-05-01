@@ -41,6 +41,7 @@ const AdminDashboard = () => {
                 <div className="mb-4 text-sm text-gray-600">Your Announcements.</div>
             </div>
             <div className="max-w-6xl mx-auto mt-10 p-6">
+                
                 <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
                 {user?.role === 'SUPER_ADMIN' && (
                     <div className="mb-4 text-sm text-gray-600">You are viewing all tickets.</div>

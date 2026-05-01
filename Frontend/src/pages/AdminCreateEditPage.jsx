@@ -4,6 +4,7 @@ import AdminShell from '../components/KbAdmin/AdminShell';
 import { createKBItem, getKBItem, updateKBItem, uploadPDF } from '../services/kbService';
 import { getCategories } from '../services/categoryService';
 import { useToast, ToastContainer } from '../components/common/Toast';
+import RichTextEditor from '../components/kb/RichTextEditor';
 
 const empty = {
   title: '',
@@ -226,13 +227,14 @@ export default function AdminCreateEditPage() {
           {form.type === 'ARTICLE' ? (
             <label className="block">
               <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Content</span>
-              <textarea
-                rows={10}
-                value={form.content}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-                placeholder="Write the article content here…"
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-sfs-blue"
-              />
+              <div className="mt-1">
+                <RichTextEditor
+                  value={form.content}
+                  onChange={(content) => setForm({ ...form, content })}
+                  placeholder="Write the article content here..."
+                  minHeight="280px"
+                />
+              </div>
             </label>
           ) : (
             <div className="block">
