@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -53,6 +54,19 @@ public class SecurityConfig {
                         // Public
                         .requestMatchers("/api/announcements/**", "/api/messages/**").permitAll()
                         .requestMatchers("/api/departments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/pages/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/kb/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/faqs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/policies/**").permitAll()
+
+                        // Knowledgebase admin
+                        .requestMatchers("/api/kb/admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/categories/admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/faqs/admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/policies/admin/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/pages/**").hasRole("SUPER_ADMIN")
+                        .requestMatchers("/api/chat/**").authenticated()
 
                         // SLA (YOUR PART)
                         .requestMatchers("/api/sla/**").hasRole("SUPER_ADMIN")

@@ -13,7 +13,12 @@ export const AuthProvider = ({ children }) => {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
         if (token && storedUser) {
-            setUser(JSON.parse(storedUser));
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+            }
         }
         setLoading(false);
     }, []);
@@ -57,6 +62,7 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         loading,
+        isAdmin: user?.role === 'SUPER_ADMIN',
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
