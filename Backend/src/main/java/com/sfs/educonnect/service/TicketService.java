@@ -228,9 +228,30 @@ public class TicketService {
             throw new RuntimeException("Only admins can update tickets");
         }
 
-        // Update status if provided
+        // Update status if provided - with proper validation
         if (request.getStatus() != null) {
-            ticket.setTicketStatus(request.getStatus());
+            TicketStatus newStatus = request.getStatus();
+            TicketStatus currentStatus = ticket.getTicketStatus();
+
+            // CRITICAL: Prevent bypassing approval workflow
+            // APPROVED and REJECTED statuses can ONLY be set via approveTicket() and
+            // rejectTicket() methods
+            if (newStatus == TicketStatus.APPROVED || newStatus == TicketStatus.REJECTED) {
+                throw new RuntimeException("Cannot directly set status to " + newStatus +
+                        ". Use the proper approval/rejection endpoints instead.");
+            }
+
+            // Validate status transitions for DEPT_ADMIN
+            if (admin.getRole() == Role.DEPT_ADMIN) {
+                // DEPT_ADMIN can only set to OPEN or IN_PROGRESS (not RESOLVED - use
+                // submitForApproval)
+                if (newStatus == TicketStatus.RESOLVED) {
+                    throw new RuntimeException("Department admin cannot directly set status to RESOLVED. " +
+                            "Use the submit-approval endpoint instead.");
+                }
+            }
+
+            ticket.setTicketStatus(newStatus);
         }
 
         // Reassign department if provided (only dept admin or super admin can reassign)
@@ -362,26 +383,26 @@ public class TicketService {
     }
 
     public TicketResponse submitSatisfactionScore(Long ticketId, Long studentId, Integer score) {
-    Ticket ticket = ticketRepository.findById(ticketId)
-            .orElseThrow(() -> new RuntimeException("Ticket not found"));
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-    // Ensure the ticket belongs to the logged-in student
-    if (!ticket.getStudent().getId().equals(studentId)) {
-        throw new RuntimeException("You are not authorized to rate this ticket");
+        // Ensure the ticket belongs to the logged-in student
+        if (!ticket.getStudent().getId().equals(studentId)) {
+            throw new RuntimeException("You are not authorized to rate this ticket");
+        }
+
+        // Only approved tickets can be rated
+        if (ticket.getTicketStatus() != TicketStatus.APPROVED) {
+            throw new RuntimeException("Satisfaction score can only be submitted for approved tickets");
+        }
+
+        // Prevent re-rating
+        if (ticket.getSatisfactionScore() != null) {
+            throw new RuntimeException("Satisfaction score already submitted");
+        }
+
+        ticket.setSatisfactionScore(score);
+        ticket = ticketRepository.save(ticket);
+        return mapToResponse(ticket);
     }
-
-    // Only approved tickets can be rated
-    if (ticket.getTicketStatus() != TicketStatus.APPROVED) {
-        throw new RuntimeException("Satisfaction score can only be submitted for approved tickets");
-    }
-
-    // Prevent re-rating
-    if (ticket.getSatisfactionScore() != null) {
-        throw new RuntimeException("Satisfaction score already submitted");
-    }
-
-    ticket.setSatisfactionScore(score);
-    ticket = ticketRepository.save(ticket);
-    return mapToResponse(ticket);
-}
 }
