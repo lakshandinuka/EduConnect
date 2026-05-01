@@ -8,6 +8,20 @@ import {
 
 const COLORS = ["#0d2b6b", "#4f86f7", "#22c55e", "#f97316", "#a855f7", "#ec4899"];
 
+// Professional Dropdown Style
+const dropdownStyle = {
+  padding: "8px 16px",
+  borderRadius: 8,
+  border: "none",
+  fontSize: "13px",
+  fontWeight: "600",
+  background: "#0d2b6b", // Dark Blue
+  color: "#ffffff",      // White text
+  cursor: "pointer",
+  outline: "none",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+};
+
 const th = {
   padding: "10px 16px", textAlign: "left",
   color: "#0d2b6b", fontWeight: 600, fontSize: 11
@@ -24,6 +38,7 @@ export default function AnalyticsDashboard() {
   const [sentiment, setSentiment] = useState([]);
   const [status, setStatus] = useState([]);
   const [agents, setAgents] = useState([]);
+  const [selectedAgentName, setSelectedAgentName] = useState("All");
   const [satisfaction, setSatisfaction] = useState({});
   const [total, setTotal] = useState({});
   const [anomalies, setAnomalies] = useState([]);
@@ -32,7 +47,6 @@ export default function AnalyticsDashboard() {
   const [showCount, setShowCount] = useState(5);
 
   useEffect(() => {
-    // use api instance (with auth token) instead of raw axios
     api.get("/dashboard/total").then(r => setTotal(r.data)).catch(e => console.error(e));
     api.get("/dashboard/resolution").then(r => setResolution(r.data)).catch(e => console.error(e));
     api.get("/dashboard/sla").then(r => setSla(r.data)).catch(e => console.error(e));
@@ -139,14 +153,11 @@ export default function AnalyticsDashboard() {
             <select
               value={anomalyFilter}
               onChange={e => { setAnomalyFilter(e.target.value); setShowCount(7); }}
-              style={{
-                padding: "6px 12px", borderRadius: 8, border: "1px solid #ddd",
-                fontSize: 13, color: "#7692cf", cursor: "pointer"
-              }}
+              style={dropdownStyle}
             >
-              <option value="All">All Severities</option>
-              <option value="HIGH">HIGH only</option>
-              <option value="MEDIUM">MEDIUM only</option>
+              <option value="All" style={{ background: "#fff", color: "#0d2b6b" }}>All Severities</option>
+              <option value="HIGH" style={{ background: "#fff", color: "#0d2b6b" }}>HIGH only</option>
+              <option value="MEDIUM" style={{ background: "#fff", color: "#0d2b6b" }}>MEDIUM only</option>
             </select>
           </div>
 
@@ -245,7 +256,6 @@ export default function AnalyticsDashboard() {
         </Section>
 
         <div style={{ display: "flex", gap: 24, marginBottom: 24, flexWrap: "wrap" }}>
-          {/* Sentiment */}
           <Section title="Sentiment Distribution" style={{ flex: 1, minWidth: 320 }}>
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
@@ -280,7 +290,6 @@ export default function AnalyticsDashboard() {
             </ResponsiveContainer>
           </Section>
 
-          {/* Status */}
           <Section title="Tickets by Status" style={{ flex: 1, minWidth: 320 }}>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={status} margin={{ bottom: 40 }}>
@@ -295,15 +304,36 @@ export default function AnalyticsDashboard() {
           </Section>
         </div>
 
-        {/* Agent Workload */}
+        {/* Agent Workload - Dynamic Size Based on Filter */}
         <Section title="Agent Workload">
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={agents} layout="vertical" margin={{ left: 40, right: 20 }}>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
+            <select
+              value={selectedAgentName}
+              onChange={(e) => setSelectedAgentName(e.target.value)}
+              style={dropdownStyle}
+            >
+              <option value="All" style={{ background: "#fff", color: "#0d2b6b" }}>All Agents</option>
+              {agents.map((a, idx) => (
+                <option key={idx} value={a.agent_name} style={{ background: "#fff", color: "#0d2b6b" }}>
+                  {a.agent_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* Height is 300 for 'All', but shrinks to 160 for a single agent */}
+          <ResponsiveContainer width="100%" height={selectedAgentName === "All" ? 300 : 160}>
+            <BarChart 
+              data={selectedAgentName === "All" ? agents : agents.filter(a => a.agent_name === selectedAgentName)} 
+              layout="vertical" 
+              margin={{ left: 40, right: 20 }}
+              barSize={selectedAgentName === "All" ? undefined : 35} // Slimmer bars for single selection
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
               <YAxis dataKey="agent_name" type="category" width={100} tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Legend />
+              <Legend verticalAlign="bottom" height={36}/>
               <Bar dataKey="ticketCount" fill="#0d2b6b" name="Tickets Handled" />
               <Bar dataKey="avgResolutionHours" fill="#4f86f7" name="Avg Resolution (hrs)" />
             </BarChart>
