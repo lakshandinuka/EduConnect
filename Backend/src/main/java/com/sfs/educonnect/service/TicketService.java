@@ -162,6 +162,7 @@ public class TicketService {
         response.setUpdatedAt(ticket.getUpdatedAt());
         response.setPredictedPriorityLabel(ticket.getPredictedPriorityLabel());
         response.setPriorityConfidence(ticket.getPriorityConfidence());
+        response.setSatisfactionScore(ticket.getSatisfactionScore());
 
         // Map attachments to DTOs with download URL
         List<AttachmentDto> attachmentDtos = ticket.getAttachments().stream()
@@ -359,4 +360,28 @@ public class TicketService {
 
         return mapToResponse(ticket);
     }
+
+    public TicketResponse submitSatisfactionScore(Long ticketId, Long studentId, Integer score) {
+    Ticket ticket = ticketRepository.findById(ticketId)
+            .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+    // Ensure the ticket belongs to the logged-in student
+    if (!ticket.getStudent().getId().equals(studentId)) {
+        throw new RuntimeException("You are not authorized to rate this ticket");
+    }
+
+    // Only approved tickets can be rated
+    if (ticket.getTicketStatus() != TicketStatus.APPROVED) {
+        throw new RuntimeException("Satisfaction score can only be submitted for approved tickets");
+    }
+
+    // Prevent re-rating
+    if (ticket.getSatisfactionScore() != null) {
+        throw new RuntimeException("Satisfaction score already submitted");
+    }
+
+    ticket.setSatisfactionScore(score);
+    ticket = ticketRepository.save(ticket);
+    return mapToResponse(ticket);
+}
 }

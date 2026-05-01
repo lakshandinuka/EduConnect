@@ -22,4 +22,5 @@ public class TicketResponse {
     private List<CommentDto> comments;
     private String predictedPriorityLabel;
     private Double priorityConfidence;
+    private Integer satisfactionScore;
 }
