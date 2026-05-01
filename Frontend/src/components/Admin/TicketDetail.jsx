@@ -4,6 +4,32 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 
+// ---- PriorityBadge component (merged) ----
+const COLORS = {
+    LOW: "bg-green-100 text-green-800",
+    MEDIUM: "bg-yellow-100 text-yellow-800",
+    HIGH: "bg-orange-100 text-orange-800",
+    CRITICAL: "bg-red-100 text-red-800",
+};
+
+const PriorityBadge = ({ label, confidence }) => {
+    // Normalize label to match keys (e.g., "HIGH" -> "HIGH")
+    const normalizedLabel = label?.toUpperCase();
+    const colorClass = COLORS[normalizedLabel] || "bg-gray-100 text-gray-800";
+
+    return (
+        <span className={`px-2 py-1 rounded text-sm font-medium ${colorClass}`}>
+            {normalizedLabel || "Unknown"}
+            {confidence > 0 && (
+                <span className="ml-1 opacity-60 text-xs">
+                    ({Math.round(confidence * 100)}%)
+                </span>
+            )}
+        </span>
+    );
+};
+// -------------------------------------------------
+
 const TicketDetail = () => {
     const { ticketId } = useParams();
     const navigate = useNavigate();
@@ -19,8 +45,6 @@ const TicketDetail = () => {
     const [noteType, setNoteType] = useState('public');
 
     console.log('status:', status);
-
-
 
     useEffect(() => {
         fetchTicket();
@@ -282,19 +306,16 @@ const TicketDetail = () => {
                                             </button>
                                         )}
                                         {canSubmitApproval && (
-                                            // GREEN — positive forward action
                                             <button onClick={handleSubmitApproval} disabled={actionLoading} style={styles.btnGreen}>
                                                 {actionLoading ? 'Submitting...' : 'Submit for Approval'}
                                             </button>
                                         )}
                                         {canApprove && (
-                                            // GREEN — approval / success action
                                             <button onClick={handleApprove} disabled={actionLoading} style={styles.btnGreen}>
                                                 {actionLoading ? 'Approving...' : 'Approve Ticket'}
                                             </button>
                                         )}
                                         {canReject && (
-                                            // RED — destructive / rejection action
                                             <button onClick={handleReject} disabled={actionLoading} style={styles.btnRed}>
                                                 {actionLoading ? 'Rejecting...' : 'Reject Ticket'}
                                             </button>
@@ -318,7 +339,15 @@ const TicketDetail = () => {
 
                             <div style={styles.sideSection}>
                                 <div style={styles.sideLabel}>Severity Level</div>
-                                <div style={styles.sideMuted}>select</div>
+
+                                {ticket.predictedPriorityLabel ? (
+                                    <PriorityBadge
+                                        label={ticket.predictedPriorityLabel}
+                                        confidence={ticket.priorityConfidence}
+                                    />
+                                ) : (
+                                    <div style={styles.sideMuted}>Not predicted</div>
+                                )}
                             </div>
 
                             <div style={styles.sideDivider} />
@@ -358,19 +387,16 @@ const TicketDetail = () => {
                                 {!isStudent && (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
                                         {canSubmitApproval && (
-                                            // GREEN — positive forward action
                                             <button style={styles.sideActionBtnGreen} onClick={handleSubmitApproval} disabled={actionLoading}>
                                                 Submit for Approval
                                             </button>
                                         )}
                                         {canApprove && (
-                                            // GREEN — approval / success action
                                             <button style={styles.sideActionBtnGreen} onClick={handleApprove} disabled={actionLoading}>
                                                 Approve
                                             </button>
                                         )}
                                         {canReject && (
-                                            // RED — destructive / rejection action
                                             <button style={styles.sideActionBtnRed} onClick={handleReject} disabled={actionLoading}>
                                                 Reject
                                             </button>
@@ -397,6 +423,7 @@ const TicketDetail = () => {
     );
 };
 
+// Styles (unchanged from original)
 const C = {
     bg: '#f0f0f0',
     white: '#ffffff',
@@ -553,7 +580,6 @@ const styles = {
         gap: 8,
         alignItems: 'center',
     },
-    // Blue — neutral update action
     btnBlue: {
         background: C.primary,
         color: '#fff',
@@ -564,7 +590,6 @@ const styles = {
         fontWeight: 600,
         cursor: 'pointer',
     },
-    // Green — positive / approve / submit actions
     btnGreen: {
         background: C.green,
         color: '#fff',
@@ -575,7 +600,6 @@ const styles = {
         fontWeight: 600,
         cursor: 'pointer',
     },
-    // Red — destructive / reject actions
     btnRed: {
         background: C.red,
         color: '#fff',
@@ -667,7 +691,6 @@ const styles = {
         fontWeight: 700,
         marginTop: 2,
     },
-    // Sidebar — green button (submit / approve)
     sideActionBtnGreen: {
         background: C.green,
         color: '#fff',
@@ -680,7 +703,6 @@ const styles = {
         width: '100%',
         textAlign: 'left',
     },
-    // Sidebar — red button (reject)
     sideActionBtnRed: {
         background: C.red,
         color: '#fff',

@@ -51,6 +51,9 @@ public class TicketService {
     @Autowired
     private CommentRepository commentRepository;
 
+    @Autowired
+    private PriorityPredictionService priorityPredictionService; // <-- NEW
+
     @SuppressWarnings("null")
     public TicketResponse createTicket(Long studentId, TicketRequest request) {
         User student = userRepository.findById(studentId)
@@ -60,6 +63,12 @@ public class TicketService {
 
         InquiryType inquiryType = inquiryTypeRepository.findById(request.getInquiryTypeId())
                 .orElseThrow(() -> new RuntimeException("Inquiry type not found"));
+
+        // ---- Priority prediction (merged) ----
+        String processedText = preprocessText(request.getInquiryText());
+        PriorityPredictionService.PriorityResult result = priorityPredictionService.predictPriority(processedText);
+        // ------------------------------------
+
         Ticket ticket = new Ticket();
         ticket.setStudent(student);
         ticket.setInquiryType(inquiryType);
@@ -67,8 +76,23 @@ public class TicketService {
         ticket.setInquiryText(request.getInquiryText());
         ticket.setTicketStatus(TicketStatus.OPEN);
 
+        // Store prediction results
+        ticket.setPredictedPriority(result.priority());
+        ticket.setPredictedPriorityLabel(result.priorityLabel());
+        ticket.setPriorityConfidence(result.confidence());
+
         ticket = ticketRepository.save(ticket);
         return mapToResponse(ticket);
+    }
+
+    /**
+     * Preprocesses raw text to match the training pipeline:
+     * lowercases and removes non-alphanumeric characters (retains spaces).
+     */
+    private String preprocessText(String raw) {
+        if (raw == null)
+            return "";
+        return raw.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
     }
 
     @SuppressWarnings("null")
@@ -136,6 +160,8 @@ public class TicketService {
         response.setStatus(ticket.getTicketStatus().name());
         response.setCreatedAt(ticket.getCreatedAt());
         response.setUpdatedAt(ticket.getUpdatedAt());
+        response.setPredictedPriorityLabel(ticket.getPredictedPriorityLabel());
+        response.setPriorityConfidence(ticket.getPriorityConfidence());
 
         // Map attachments to DTOs with download URL
         List<AttachmentDto> attachmentDtos = ticket.getAttachments().stream()

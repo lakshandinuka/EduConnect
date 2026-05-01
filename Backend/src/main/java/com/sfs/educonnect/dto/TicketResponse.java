@@ -20,4 +20,6 @@ public class TicketResponse {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private List<CommentDto> comments;
+    private String predictedPriorityLabel;
+    private Double priorityConfidence;
 }
