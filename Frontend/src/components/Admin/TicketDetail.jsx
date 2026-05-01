@@ -4,7 +4,6 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 
-// ---- PriorityBadge component (merged) ----
 const COLORS = {
     LOW: "bg-green-100 text-green-800",
     MEDIUM: "bg-yellow-100 text-yellow-800",
@@ -13,7 +12,7 @@ const COLORS = {
 };
 
 const PriorityBadge = ({ label, confidence }) => {
-    // Normalize label to match keys (e.g., "HIGH" -> "HIGH")
+
     const normalizedLabel = label?.toUpperCase();
     const colorClass = COLORS[normalizedLabel] || "bg-gray-100 text-gray-800";
 
@@ -28,7 +27,7 @@ const PriorityBadge = ({ label, confidence }) => {
         </span>
     );
 };
-// -------------------------------------------------
+
 
 const TicketDetail = () => {
     const { ticketId } = useParams();
