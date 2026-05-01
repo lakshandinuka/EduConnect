@@ -1,208 +1,170 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-// Inject navbar styles once
-if (typeof document !== 'undefined' && !document.getElementById('navbar-style')) {
-    const styleEl = document.createElement('style');
-    styleEl.id = 'navbar-style';
-    styleEl.textContent = `
-        .navbar-root {
-            background: linear-gradient(90deg, #0f1f3d 0%, #0a1628 60%, #071020 100%);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 2px 16px rgba(0,0,0,0.4);
-            position: relative;
-        }
-        .navbar-root::after {
-            content: '';
-            display: block;
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, #1e40af, #3b82f6, #60a5fa, #3b82f6, #1e40af);
-            background-size: 200% 100%;
-            animation: shimmer 4s linear infinite;
-        }
-        @keyframes shimmer {
-            0% { background-position: 0% 0; }
-            100% { background-position: 200% 0; }
-        }
-        .navbar-brand {
-            color: #f0f6ff !important;
-            font-size: 1.2rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .navbar-link {
-            color: #ffffff !important;
-            text-decoration: bold;
-            font-weight: 500;
-            font-size: 15px;
-            padding: 4px 10px;
-            border-radius: 6px;
-            border: 1px solid transparent;
-            transition: color 0.2s, border-color 0.2s, background 0.2s;
-        }
-        .navbar-link:hover {
-            color: #000000 !important;
-            border-color: rgba(59,130,246,0.3);
-            background: rgb(255, 255, 255);
-        }
-        .navbar-greeting {
-            color: #ffffff;
-            font-size: 13px;
-            padding: 0 4px;
-        }
-        .navbar-logout {
-            background: rgba(239,68,68,0.15);
-            border: 1px solid rgba(239,68,68,0.35);
-            color: #ffffff;
-            padding: 4px 14px;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .navbar-logout:hover {
-            background: rgb(255, 0, 0);
-        }
-        .navbar-divider {
-            width: 1px;
-            height: 18px;
-            background: rgba(255,255,255,0.1);
-            margin: 0 4px;
-        }
-        .navbar-kb-menu {
-            position: relative;
-            display: inline-flex;
-        }
-        .navbar-kb-dropdown {
-            display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            min-width: 220px;
-            padding: 8px;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.12);
-            background: #0a1628;
-            box-shadow: 0 18px 36px rgba(0,0,0,0.32);
-            z-index: 60;
-        }
-        .navbar-kb-menu:hover .navbar-kb-dropdown,
-        .navbar-kb-menu:focus-within .navbar-kb-dropdown {
-            display: grid;
-            gap: 4px;
-        }
-        .navbar-kb-dropdown .navbar-link {
-            display: block;
-            white-space: nowrap;
-            padding: 8px 10px;
-        }
-    `;
-    document.head.appendChild(styleEl);
+const navBase =
+  'rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue';
+
+function NavLink({ to, children, onClick }) {
+  const location = useLocation();
+  const active = location.pathname === to || location.pathname.startsWith(`${to}/`);
+
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className={`${navBase} ${
+        active ? 'text-sfs-blue' : 'text-slate-700 hover:bg-slate-50 hover:text-sfs-blue'
+      }`}
+    >
+      {children}
+    </Link>
+  );
 }
 
-const Navbar = () => {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
-    const [adminNotif, setAdminNotif] = useState(false);
+function Dropdown({ label, active, children }) {
+  const [open, setOpen] = useState(false);
 
-    useEffect(() => {
-        const admin = localStorage.getItem("adminNotif");
-        if (admin === "true") setAdminNotif(true);
-    }, []);
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        onFocus={() => setOpen(true)}
+        className={`${navBase} inline-flex items-center gap-1 ${
+          active ? 'text-sfs-blue' : 'text-slate-700 hover:bg-slate-50 hover:text-sfs-blue'
+        }`}
+        aria-expanded={open}
+      >
+        {label}
+        <span aria-hidden className="text-xs">
+          {open ? '^' : 'v'}
+        </span>
+      </button>
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+      {open && (
+        <div className="absolute right-0 top-full z-50 min-w-56 pt-2">
+          <div className="rounded-lg border border-slate-200 bg-white p-2 shadow-lg">
+            <div className="grid gap-1">{children}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
-    return (
-        <nav className="navbar-root">
-            <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+export default function Navbar() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-                <Link to="/dashboard" className="navbar-brand">
-                    SFS EDUConnect
-                </Link>
+  const isKbArea = location.pathname.startsWith('/kb') || location.pathname.startsWith('/admin/kb') || location.pathname === '/admin/faqs';
+  const isBookingsArea = location.pathname === '/student/my-bookings' || location.pathname === '/book-appointment';
 
-                <div className="flex space-x-2 items-center">
+  const greeting = useMemo(() => {
+    const name = user?.fullName || user?.email || 'User';
+    return `Hi, ${name}`;
+  }, [user]);
 
-                    <div className="navbar-kb-menu">
-                        <Link to="/kb" className="navbar-link">Knowledgebase</Link>
-                        {user?.role === 'SUPER_ADMIN' && (
-                            <div className="navbar-kb-dropdown">
-                                <Link to="/admin/kb" className="navbar-link">Admin Knowledgebase</Link>
-                                <Link to="/admin/faqs" className="navbar-link">Admin FAQ</Link>
-                                <Link to="/admin/kb/categories" className="navbar-link">Categories</Link>
-                                <Link to="/admin/kb/policies" className="navbar-link">Policies</Link>
-                            </div>
-                        )}
-                    </div>
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-                    {/* ADMIN (DEPT + SUPER) */}
-                    {(user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                        <>
-                            <Link to="/admin/dashboard" className="navbar-link">Admin Dashboard</Link>
-                            <Link to="/admin/manage-types" className="navbar-link">Manage Types</Link>
-                            <Link to="/admin/manage-slots" className="navbar-link">Manage Slots</Link>
-                            <Link to="/admin/view-bookings" className="navbar-link">View Bookings</Link>
-                        </>
-                    )}
+  const clearAdminNotice = () => {
+    localStorage.setItem('adminNotif', 'false');
+  };
 
-                    {/* STUDENT */}
-                    {user?.role === 'STUDENT' && (
-                        <>
-                            <Link to="/create-ticket" className="navbar-link">Create Ticket</Link>
-                            <Link to="/my-tickets" className="navbar-link">My Tickets</Link>
-                            <Link to="/announcements" className="navbar-link">Announcements</Link>
-                            <Link to="/book-appointment" className="navbar-link">Appointment Booking</Link>
-                            <Link to="/student/my-bookings" className="navbar-link">My Bookings</Link>
-                        </>
-                    )}
+  return (
+    <nav className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2">
+        <Link
+          to="/home"
+          className="flex items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
+        >
+          <img src="/assets/sfs-academy.png" alt="SFS Academy" className="h-12 w-auto" />
+          <span className="sr-only">SFS EDUCONNECT Home</span>
+        </Link>
 
-                    {/* ANNOUNCEMENT ADMIN */}
-                    {(user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') && (
-                        <Link
-                            to="/admin/announcements"
-                            className="navbar-link"
-                            style={{ position: 'relative' }}
-                            onClick={() => {
-                                localStorage.setItem("adminNotif", "false");
-                                setAdminNotif(false);
-                            }}
-                        >
-                            Admin Panel
-                        </Link>
-                    )}
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1">
+          {user ? (
+            <>
+              <NavLink to="/home">Home</NavLink>
 
-                    {/* SUPER ADMIN ONLY */}
-                    {user?.role === 'SUPER_ADMIN' && (
-                        <>
-                            <Link to="/admin/sla" className="navbar-link">SLA Policies</Link>
-                            <Link to="/analytics" className="navbar-link">Analytics</Link>
-                            <Link to="/register" className="navbar-link">Register New User</Link>
-                        </>
-                    )}
+              {user?.role === 'STUDENT' && (
+                <>
+                  <NavLink to="/dashboard">Dashboard</NavLink>
+                  <NavLink to="/kb">Knowledge Base</NavLink>
+                  <NavLink to="/my-tickets">My Tickets</NavLink>
+                  <NavLink to="/announcements">Announcements</NavLink>
+                  <Dropdown label="My Bookings" active={isBookingsArea}>
+                    <NavLink to="/student/my-bookings">My Bookings</NavLink>
+                    <NavLink to="/book-appointment">Book New Appointment</NavLink>
+                  </Dropdown>
+                </>
+              )}
 
-                    <div className="navbar-divider" />
+              {(user?.role === 'DEPT_ADMIN' || user?.role === 'SUPER_ADMIN') && (
+                <>
+                  <NavLink to="/admin/dashboard">Admin Dashboard</NavLink>
 
-                    <span className="navbar-greeting">
-                        Hello, {user?.fullName || 'Admin'}
-                    </span>
+                  <Dropdown label="Appointments">
+                    <NavLink to="/admin/manage-types">Appointment Types</NavLink>
+                    <NavLink to="/admin/manage-slots">Appointment Slots</NavLink>
+                    <NavLink to="/admin/view-bookings">View Appointments</NavLink>
+                  </Dropdown>
+                </>
+              )}
 
-                    <button onClick={handleLogout} className="navbar-logout">
-                        Logout
-                    </button>
+              {user?.role === 'SUPER_ADMIN' && (
+                <>
+                  <Dropdown label="Knowledge Base" active={isKbArea}>
+                    <NavLink to="/kb">Preview Knowledge Base</NavLink>
+                    <NavLink to="/admin/kb">Admin Knowledge Base</NavLink>
+                    <NavLink to="/admin/faqs">Admin FAQ</NavLink>
+                    <NavLink to="/admin/kb/categories">Admin Category Manager</NavLink>
+                  </Dropdown>
+                  <NavLink to="/admin/announcements" onClick={clearAdminNotice}>
+                    Announcements
+                  </NavLink>
+                  <NavLink to="/admin/sla">SLA Policies</NavLink>
+                  <NavLink to="/analytics">Analytics</NavLink>
+                  <NavLink to="/register">Register User</NavLink>
+                </>
+              )}
 
-                </div>
-            </div>
-        </nav>
-    );
-};
+              {user?.role === 'ADMIN' && (
+                <NavLink to="/admin/announcements" onClick={clearAdminNotice}>
+                  Admin Panel
+                </NavLink>
+              )}
 
-export default Navbar;
+              <span className="hidden px-2 text-sm text-slate-500 lg:inline">{greeting}</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="ml-1 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-sm font-semibold text-slate-700">Login to get started</span>
+              <Link
+                to="/login"
+                className={`${navBase} text-sfs-blue hover:bg-slate-50`}
+              >
+                Login
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}

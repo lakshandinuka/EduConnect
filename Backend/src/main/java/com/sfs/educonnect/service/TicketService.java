@@ -51,6 +51,9 @@ public class TicketService {
     @Autowired
     private CommentRepository commentRepository;
 
+    @Autowired
+    private PriorityPredictionService priorityPredictionService; // <-- NEW
+
     @SuppressWarnings("null")
     public TicketResponse createTicket(Long studentId, TicketRequest request) {
         User student = userRepository.findById(studentId)
@@ -60,6 +63,12 @@ public class TicketService {
 
         InquiryType inquiryType = inquiryTypeRepository.findById(request.getInquiryTypeId())
                 .orElseThrow(() -> new RuntimeException("Inquiry type not found"));
+
+        // ---- Priority prediction (merged) ----
+        String processedText = preprocessText(request.getInquiryText());
+        PriorityPredictionService.PriorityResult result = priorityPredictionService.predictPriority(processedText);
+        // ------------------------------------
+
         Ticket ticket = new Ticket();
         ticket.setStudent(student);
         ticket.setInquiryType(inquiryType);
@@ -67,8 +76,23 @@ public class TicketService {
         ticket.setInquiryText(request.getInquiryText());
         ticket.setTicketStatus(TicketStatus.OPEN);
 
+        // Store prediction results
+        ticket.setPredictedPriority(result.priority());
+        ticket.setPredictedPriorityLabel(result.priorityLabel());
+        ticket.setPriorityConfidence(result.confidence());
+
         ticket = ticketRepository.save(ticket);
         return mapToResponse(ticket);
+    }
+
+    /**
+     * Preprocesses raw text to match the training pipeline:
+     * lowercases and removes non-alphanumeric characters (retains spaces).
+     */
+    private String preprocessText(String raw) {
+        if (raw == null)
+            return "";
+        return raw.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
     }
 
     @SuppressWarnings("null")
@@ -136,6 +160,9 @@ public class TicketService {
         response.setStatus(ticket.getTicketStatus().name());
         response.setCreatedAt(ticket.getCreatedAt());
         response.setUpdatedAt(ticket.getUpdatedAt());
+        response.setPredictedPriorityLabel(ticket.getPredictedPriorityLabel());
+        response.setPriorityConfidence(ticket.getPriorityConfidence());
+        response.setSatisfactionScore(ticket.getSatisfactionScore());
 
         // Map attachments to DTOs with download URL
         List<AttachmentDto> attachmentDtos = ticket.getAttachments().stream()
@@ -201,9 +228,30 @@ public class TicketService {
             throw new RuntimeException("Only admins can update tickets");
         }
 
-        // Update status if provided
+        // Update status if provided - with proper validation
         if (request.getStatus() != null) {
-            ticket.setTicketStatus(request.getStatus());
+            TicketStatus newStatus = request.getStatus();
+            TicketStatus currentStatus = ticket.getTicketStatus();
+
+            // CRITICAL: Prevent bypassing approval workflow
+            // APPROVED and REJECTED statuses can ONLY be set via approveTicket() and
+            // rejectTicket() methods
+            if (newStatus == TicketStatus.APPROVED || newStatus == TicketStatus.REJECTED) {
+                throw new RuntimeException("Cannot directly set status to " + newStatus +
+                        ". Use the proper approval/rejection endpoints instead.");
+            }
+
+            // Validate status transitions for DEPT_ADMIN
+            if (admin.getRole() == Role.DEPT_ADMIN) {
+                // DEPT_ADMIN can only set to OPEN or IN_PROGRESS (not RESOLVED - use
+                // submitForApproval)
+                if (newStatus == TicketStatus.RESOLVED) {
+                    throw new RuntimeException("Department admin cannot directly set status to RESOLVED. " +
+                            "Use the submit-approval endpoint instead.");
+                }
+            }
+
+            ticket.setTicketStatus(newStatus);
         }
 
         // Reassign department if provided (only dept admin or super admin can reassign)
@@ -331,6 +379,30 @@ public class TicketService {
             throw new RuntimeException("Access denied");
         }
 
+        return mapToResponse(ticket);
+    }
+
+    public TicketResponse submitSatisfactionScore(Long ticketId, Long studentId, Integer score) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+        // Ensure the ticket belongs to the logged-in student
+        if (!ticket.getStudent().getId().equals(studentId)) {
+            throw new RuntimeException("You are not authorized to rate this ticket");
+        }
+
+        // Only approved tickets can be rated
+        if (ticket.getTicketStatus() != TicketStatus.APPROVED) {
+            throw new RuntimeException("Satisfaction score can only be submitted for approved tickets");
+        }
+
+        // Prevent re-rating
+        if (ticket.getSatisfactionScore() != null) {
+            throw new RuntimeException("Satisfaction score already submitted");
+        }
+
+        ticket.setSatisfactionScore(score);
+        ticket = ticketRepository.save(ticket);
         return mapToResponse(ticket);
     }
 }

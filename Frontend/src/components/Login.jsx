@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import bgImage from '../assets/wallpaper.png';
 
 const Login = () => {
@@ -11,6 +11,14 @@ const Login = () => {
 
     const { login } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const getReturnPath = () => {
+        const from = location.state?.from;
+        if (!from) return '/dashboard';
+        if (typeof from === 'string') return from;
+        return `${from.pathname || '/dashboard'}${from.search || ''}${from.hash || ''}`;
+    };
 
 
     useEffect(() => {
@@ -26,15 +34,20 @@ const Login = () => {
         setError('');
         const result = await login(email, password);
         if (result.success) {
-            navigate('/dashboard');
+            navigate(getReturnPath(), { replace: true });
         } else {
             setError(result.message);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-grey-100 relative">
-            <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+        <div className="min-h-screen flex items-center justify-center relative" style={{
+            backgroundImage: 'url(/assets/hero-campus.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+        }}>
+            <div className="absolute inset-0 bg-black bg-opacity-50"></div>
 
             {/* Time & Date */}
             <div className="absolute top-6 right-6 text-white text-right">

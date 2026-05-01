@@ -24,9 +24,11 @@ public class BookingService {
 
     @Transactional
     public Booking createBooking(BookingRequestDto request) {
+        @SuppressWarnings("null")
         User student = userRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Student not found"));
-                
+
+        @SuppressWarnings("null")
         TimeSlot timeSlot = timeSlotRepository.findById(request.getSlotId())
                 .orElseThrow(() -> new RuntimeException("Time slot not found"));
 
@@ -55,16 +57,16 @@ public class BookingService {
     public Booking updateBookingStatus(Long bookingId, BookingStatus status) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
-                
+
         booking.setStatus(status);
-        
+
         // If rejected or cancelled, free up the slot
         if (status == BookingStatus.REJECTED || status == BookingStatus.CANCELLED) {
             TimeSlot slot = booking.getTimeSlot();
             slot.setIsAvailable(true);
             timeSlotRepository.save(slot);
         }
-        
+
         return bookingRepository.save(booking);
     }
 
@@ -76,26 +78,26 @@ public class BookingService {
     public Booking rescheduleBooking(Long bookingId, Long newSlotId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
-                
+
         TimeSlot newSlot = timeSlotRepository.findById(newSlotId)
                 .orElseThrow(() -> new RuntimeException("New time slot not found"));
-                
+
         if (!newSlot.getIsAvailable()) {
             throw new RuntimeException("New time slot is not available");
         }
-        
+
         // Free up old slot
         TimeSlot oldSlot = booking.getTimeSlot();
         oldSlot.setIsAvailable(true);
         timeSlotRepository.save(oldSlot);
-        
+
         // Reserve new slot
         newSlot.setIsAvailable(false);
         timeSlotRepository.save(newSlot);
-        
+
         booking.setTimeSlot(newSlot);
         booking.setStatus(BookingStatus.PENDING); // Need re-approval? usually yes.
-        
+
         return bookingRepository.save(booking);
     }
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import TopNav from '../components/common/TopNav';
+
 import ToggleSwitch from '../components/common/ToggleSwitch';
 import { useAuth } from '../context/AuthContext';
 import { getPageContent, updatePageContent } from '../services/pageService';
@@ -12,8 +12,6 @@ const defaultHome = {
     title: 'SFS EDUCONNECT',
     subtitle:
       'Find answers fast — courses, payments, LMS access, certificates, and student services.',
-    ctaLabel: 'Take a Tour',
-    ctaTargetId: 'about',
     imageSrc: '/assets/hero-campus.jpg',
   },
   about: {
@@ -22,18 +20,6 @@ const defaultHome = {
     body:
       'SFS Academy supports learners with industry-ready training and higher-education pathways. Use EDUCONNECT to access self-help articles, FAQs, and guidance from our help desk team.',
     linkLabel: 'Read More',
-  },
-  universityOverview: {
-    title: 'University Overview',
-    subtitle: 'A quick look at what makes up our learning community.',
-  },
-  faculties: {
-    title: 'Our Faculties',
-    cards: [
-      { title: 'Student Profile', imageSrc: '/assets/hero-campus.jpg' },
-      { title: 'Teaching Staff', imageSrc: '/assets/building.jpg' },
-      { title: 'Schools & Departments', imageSrc: '/assets/library.jpg' },
-    ],
   },
   mission: {
     title: 'Our Mission',
@@ -108,25 +94,18 @@ export default function HomePage() {
     }
   };
 
-  const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   const handleSubmitTicket = () => {
-    if (user?.role === 'STUDENT') {
+    if (user) {
       navigate('/create-ticket');
       return;
     }
-    navigate('/login');
+    navigate('/login', { state: { from: '/create-ticket' } });
   };
 
   const canEdit = Boolean(isAdmin);
 
   return (
     <div className="min-h-screen bg-white text-sfs-ink">
-      <TopNav />
 
       {/* Admin edit bar */}
       {canEdit && (
@@ -202,15 +181,6 @@ export default function HomePage() {
                         />
                       </Field>
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <Field label="CTA label">
-                          <input
-                            value={draft.hero.ctaLabel}
-                            onChange={(e) =>
-                              setDraft({ ...draft, hero: { ...draft.hero, ctaLabel: e.target.value } })
-                            }
-                            className="w-full rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-sm font-semibold text-white outline-none focus:ring-2 focus:ring-white/40"
-                          />
-                        </Field>
                         <Field label="Hero image path">
                           <input
                             value={draft.hero.imageSrc}
@@ -237,18 +207,6 @@ export default function HomePage() {
                       </p>
                     </>
                   )}
-
-                  <div className="mt-6">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        scrollTo((editMode ? draft.hero.ctaTargetId : content.hero.ctaTargetId) || 'about')
-                      }
-                      className="inline-flex items-center rounded-lg bg-sfs-red px-5 py-3 text-sm font-bold text-white shadow-sm hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-                    >
-                      {(editMode ? draft.hero.ctaLabel : content.hero.ctaLabel) || 'Take a Tour'}
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -313,100 +271,6 @@ export default function HomePage() {
               >
                 {content.about.linkLabel}
               </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* University overview */}
-      <section className="bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-12">
-          {editMode ? (
-            <div className="grid gap-3">
-              <Field label="University overview title">
-                <input
-                  value={draft.universityOverview.title}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      universityOverview: { ...draft.universityOverview, title: e.target.value },
-                    })
-                  }
-                  className="w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-2xl font-extrabold text-sfs-ink outline-none focus:ring-2 focus:ring-sfs-blue"
-                />
-              </Field>
-              <Field label="University overview subtitle">
-                <input
-                  value={draft.universityOverview.subtitle}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      universityOverview: { ...draft.universityOverview, subtitle: e.target.value },
-                    })
-                  }
-                  className="w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-sfs-blue"
-                />
-              </Field>
-            </div>
-          ) : (
-            <>
-              <h2 className="text-3xl font-extrabold text-sfs-red">
-                {content.universityOverview.title}
-              </h2>
-              <p className="mt-2 text-sm text-slate-600">
-                {content.universityOverview.subtitle}
-              </p>
-            </>
-          )}
-
-          {/* Faculties */}
-          <div className="mt-10">
-            {editMode ? (
-              <Field label="Faculties title">
-                <input
-                  value={draft.faculties.title}
-                  onChange={(e) =>
-                    setDraft({ ...draft, faculties: { ...draft.faculties, title: e.target.value } })
-                  }
-                  className="w-full max-w-xl rounded-lg border border-slate-200 px-3 py-2 text-xl font-extrabold text-sfs-ink outline-none focus:ring-2 focus:ring-sfs-blue"
-                />
-              </Field>
-            ) : (
-              <h3 className="text-xl font-extrabold text-sfs-ink">{content.faculties.title}</h3>
-            )}
-
-            <div className="mt-5 grid gap-5 md:grid-cols-3">
-              {(editMode ? draft.faculties.cards : content.faculties.cards).map((card, idx) => (
-                <div
-                  key={idx}
-                  className="overflow-hidden rounded-xl border border-slate-200 bg-white"
-                >
-                  <div className="aspect-[4/3] w-full overflow-hidden bg-slate-100">
-                    <img
-                      src={card.imageSrc}
-                      alt={card.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-
-                  <div className="bg-sfs-red px-4 py-3">
-                    {editMode ? (
-                      <input
-                        value={card.title}
-                        onChange={(e) => {
-                          const cards = [...draft.faculties.cards];
-                          cards[idx] = { ...cards[idx], title: e.target.value };
-                          setDraft({ ...draft, faculties: { ...draft.faculties, cards } });
-                        }}
-                        className="w-full rounded-md bg-white/10 px-2 py-1 text-sm font-extrabold text-white outline-none focus:ring-2 focus:ring-white/50"
-                      />
-                    ) : (
-                      <div className="text-sm font-extrabold text-white">{card.title}</div>
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -592,13 +456,6 @@ export default function HomePage() {
                   className="inline-flex items-center rounded-lg bg-sfs-blue px-4 py-2 text-sm font-semibold text-white hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
                 >
                   {content.contact.submitTicketLabel}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => showToast('Tour (placeholder)', 'info')}
-                  className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
-                >
-                  Tour
                 </button>
               </div>
             </div>

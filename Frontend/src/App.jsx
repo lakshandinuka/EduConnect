@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
+import Navbar from './components/Navbar';
 
 import CreateTicket from './components/Student/CreateTicket';
 import MyTickets from './components/Student/MyTickets';
@@ -37,16 +38,16 @@ import FAQPage from './pages/FAQPage';
 import AdminKBListPage from './pages/AdminKBListPage';
 import AdminCreateEditPage from './pages/AdminCreateEditPage';
 import AdminCategoriesPage from './pages/AdminCategoriesPage';
-import AdminPoliciesPage from './pages/AdminPoliciesPage';
 import AdminPreviewPage from './pages/AdminPreviewPage';
 import AdminFAQPage from './pages/AdminFAQPage';
 import ChatbotWidget from './components/kb/ChatbotWidget';
 
 const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) return <div>Loading...</div>;
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
 
   if (requiredRoles.length > 0 && !requiredRoles.includes(user.role)) {
     return <Navigate to="/dashboard" />;
@@ -54,6 +55,13 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
 
   return children;
 };
+
+const WithNavbar = ({ children }) => (
+  <div className="min-h-screen bg-sfs-mist text-sfs-ink">
+    <Navbar />
+    <main className="px-4 py-8">{children}</main>
+  </div>
+);
 
 function AppRoutes() {
   const location = useLocation();
@@ -64,10 +72,10 @@ function AppRoutes() {
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
 
-          <Route path="/home" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
+          <Route path="/home" element={<WithNavbar><HomePage /></WithNavbar>} />
+          <Route path="/about" element={<WithNavbar><AboutPage /></WithNavbar>} />
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={<WithNavbar><Register /></WithNavbar>} />
 
           <Route
             path="/kb"
@@ -154,7 +162,7 @@ function AppRoutes() {
             path="/admin/kb/policies"
             element={
               <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
-                <AdminPoliciesPage />
+                <Navigate to="/admin/kb" replace />
               </ProtectedRoute>
             }
           />
@@ -163,7 +171,9 @@ function AppRoutes() {
             path="/admin/kb/preview"
             element={
               <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
-                <AdminPreviewPage />
+                <WithNavbar>
+                  <AdminPreviewPage />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -208,7 +218,9 @@ function AppRoutes() {
             path="/my-tickets/:ticketId"
             element={
               <ProtectedRoute>
-                <StudentTicketDetail />
+                <WithNavbar>
+                  <StudentTicketDetail />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -217,7 +229,9 @@ function AppRoutes() {
             path="/tickets/:ticketId/add-attachment"
             element={
               <ProtectedRoute>
-                <AddAttachment />
+                <WithNavbar>
+                  <AddAttachment />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -244,7 +258,9 @@ function AppRoutes() {
             path="/admin/sla"
             element={
               <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
-                <SLAListPage />
+                <WithNavbar>
+                  <SLAListPage />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -253,7 +269,9 @@ function AppRoutes() {
             path="/admin/sla/new"
             element={
               <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
-                <SLAFormPage />
+                <WithNavbar>
+                  <SLAFormPage />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -262,7 +280,9 @@ function AppRoutes() {
             path="/admin/sla/:id"
             element={
               <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
-                <SLAViewPage />
+                <WithNavbar>
+                  <SLAViewPage />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -271,7 +291,9 @@ function AppRoutes() {
             path="/admin/sla/:id/edit"
             element={
               <ProtectedRoute requiredRoles={['SUPER_ADMIN']}>
-                <SLAFormPage />
+                <WithNavbar>
+                  <SLAFormPage />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -289,7 +311,9 @@ function AppRoutes() {
             path="/book-appointment"
             element={
               <ProtectedRoute>
-                <BookAppointment />
+                <WithNavbar>
+                  <BookAppointment />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -298,7 +322,9 @@ function AppRoutes() {
             path="/student/my-bookings"
             element={
               <ProtectedRoute>
-                <MyBookings />
+                <WithNavbar>
+                  <MyBookings />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -307,7 +333,9 @@ function AppRoutes() {
             path="/admin/manage-types"
             element={
               <ProtectedRoute requiredRoles={['DEPT_ADMIN', 'SUPER_ADMIN']}>
-                <ManageTypes />
+                <WithNavbar>
+                  <ManageTypes />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -316,7 +344,9 @@ function AppRoutes() {
             path="/admin/manage-slots"
             element={
               <ProtectedRoute requiredRoles={['DEPT_ADMIN', 'SUPER_ADMIN']}>
-                <ManageSlots />
+                <WithNavbar>
+                  <ManageSlots />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
@@ -325,18 +355,31 @@ function AppRoutes() {
             path="/admin/view-bookings"
             element={
               <ProtectedRoute requiredRoles={['DEPT_ADMIN', 'SUPER_ADMIN']}>
-                <ViewBookings />
+                <WithNavbar>
+                  <ViewBookings />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />
 
-          <Route path="/announcements" element={<AnnouncementStudentView />} />
+          <Route
+            path="/announcements"
+            element={
+              <ProtectedRoute>
+                <WithNavbar>
+                  <AnnouncementStudentView />
+                </WithNavbar>
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/announcements"
             element={
               <ProtectedRoute requiredRoles={['ADMIN', 'SUPER_ADMIN']}>
-                <AnnouncementAdminDashboard />
+                <WithNavbar>
+                  <AnnouncementAdminDashboard />
+                </WithNavbar>
               </ProtectedRoute>
             }
           />

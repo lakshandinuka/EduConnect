@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 
 const StudentTicketDetail = () => {
+
     const { ticketId } = useParams();
     const navigate = useNavigate();
     const [ticket, setTicket] = useState(null);

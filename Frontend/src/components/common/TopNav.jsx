@@ -7,8 +7,6 @@ export default function TopNav() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const isKnowledgeBase = location.pathname.startsWith('/kb');
-
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -22,9 +20,9 @@ export default function TopNav() {
           className="flex items-center gap-2 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
         >
           <img
-            src="/assets/sfs-academy.svg"
+            src="/assets/sfs-academy.png"
             alt="SFS Academy"
-            className="h-7 w-auto"
+            className="h-12 w-auto"
             loading="eager"
           />
           <span className="sr-only">SFS EDUCONNECT Home</span>
@@ -40,25 +38,22 @@ export default function TopNav() {
             Home
           </Link>
 
-          {user && (
-            <Link
-              to="/kb"
-              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue ${
-                isKnowledgeBase ? 'text-sfs-blue' : 'text-slate-700 hover:text-sfs-blue'
-              }`}
-            >
-              Knowledge Base
-            </Link>
-          )}
-
           {user ? (
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="ml-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
-            >
-              Logout
-            </button>
+            <>
+              <Link
+                to="/dashboard"
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:text-sfs-blue focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
+              >
+                Dashboard
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="ml-2 inline-flex items-center rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-sfs-blue"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <Link
               to="/login"
