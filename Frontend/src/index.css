@@ -1,5 +1,6 @@
 @tailwind base;
 @tailwind components;
+
 @tailwind utilities;
 
 :root {
@@ -81,3 +82,4 @@ select {
   margin: 0.75rem 0;
   padding-left: 1.5rem;
 }
+
