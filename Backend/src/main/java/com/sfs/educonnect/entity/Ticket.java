@@ -37,13 +37,17 @@ public class Ticket {
     @JoinColumn(name = "department_id")
     private Department department;
 
+    @ManyToOne
+    @JoinColumn(name = "sla_policy_id")
+    private SLAPolicy slaPolicy;
+
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
     @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Attachment> attachments = new ArrayList<>();
 
-    // --- Fields from legacy data (including read‑only departmentId) ---
+    // --- Fields from legacy data ---
     @Column(name = "student_name")
     private String studentName;
 
@@ -54,7 +58,7 @@ public class Ticket {
     private String priority;
 
     @Column(name = "legacy_status")
-    private String status; // string version of status
+    private String status;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -71,12 +75,12 @@ public class Ticket {
     @Column(name = "satisfaction_score")
     private Integer satisfactionScore;
 
-    @Column(name = "department") // string version of department name
+    @Column(name = "department")
     private String departmentName;
 
-    // This maps to the same column as department.id – make it read‑only
+    // ✅ FIXED TYPE HERE (Integer → Long)
     @Column(name = "department_id", insertable = false, updatable = false)
-    private Integer departmentId; // kept for convenience (e.g., DTOs)
+    private Long departmentId;
 
     private String channel;
 
@@ -120,7 +124,7 @@ public class Ticket {
 
     private String sentiment;
 
-    // --- Fields from the new schema ---
+    // --- New schema ---
     @Column(nullable = false, columnDefinition = "TEXT")
     private String inquiryText;
 
@@ -139,7 +143,7 @@ public class Ticket {
     @Column(name = "ticket_created_at")
     private LocalDateTime ticketCreatedAt;
 
-    // --- Priority Prediction Fields ---
+    // --- Priority Prediction ---
     @Column(name = "predicted_priority")
     private Integer predictedPriority;
 

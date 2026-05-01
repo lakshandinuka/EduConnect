@@ -27,6 +27,17 @@ public class SLAMapper {
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());
 
+        // Keep nested time format available for frontend form
+        SLAPolicyDTO.TimeConfig responseTime = new SLAPolicyDTO.TimeConfig();
+        responseTime.setValue(entity.getResponseTimeValue());
+        responseTime.setUnit(entity.getResponseTimeUnit());
+        dto.setResponseTime(responseTime);
+
+        SLAPolicyDTO.TimeConfig resolutionTime = new SLAPolicyDTO.TimeConfig();
+        resolutionTime.setValue(entity.getResolutionTimeValue());
+        resolutionTime.setUnit(entity.getResolutionTimeUnit());
+        dto.setResolutionTime(resolutionTime);
+
         if (entity.getEscalationRules() != null) {
             dto.setEscalationRules(
                     entity.getEscalationRules()

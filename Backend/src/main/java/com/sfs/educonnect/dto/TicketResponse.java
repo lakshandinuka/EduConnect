@@ -22,4 +22,7 @@ public class TicketResponse {
     private List<CommentDto> comments;
     private String predictedPriorityLabel;
     private Double priorityConfidence;
+    private Long slaPolicyId;
+    private String slaPolicyName;
+    private LocalDateTime slaDueAt;
 }

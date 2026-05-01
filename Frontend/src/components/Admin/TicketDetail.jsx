@@ -12,7 +12,6 @@ const COLORS = {
 };
 
 const PriorityBadge = ({ label, confidence }) => {
-
     const normalizedLabel = label?.toUpperCase();
     const colorClass = COLORS[normalizedLabel] || "bg-gray-100 text-gray-800";
 
@@ -27,7 +26,6 @@ const PriorityBadge = ({ label, confidence }) => {
         </span>
     );
 };
-
 
 const TicketDetail = () => {
     const { ticketId } = useParams();
@@ -134,6 +132,10 @@ const TicketDetail = () => {
         }
     };
 
+    const formatDateTime = (value) => {
+        return value ? new Date(value).toLocaleString() : '—';
+    };
+
     if (loading) return (
         <div style={styles.loadingWrap}>
             <div style={styles.spinner}></div>
@@ -166,7 +168,6 @@ const TicketDetail = () => {
     return (
         <><Navbar />
             <div style={styles.page}>
-                {/* Top bar */}
                 <div style={styles.topBar}>
                     <button onClick={() => navigate(-1)} style={styles.backBtn}>← Back to Tickets</button>
                     <span style={styles.topBarTitle}>
@@ -174,12 +175,8 @@ const TicketDetail = () => {
                     </span>
                 </div>
 
-                {/* Body */}
                 <div style={styles.body}>
-                    {/* ── MAIN PANEL ── */}
                     <div style={styles.main}>
-
-                        {/* Customer Information */}
                         <div style={styles.card}>
                             <div style={styles.cardHeader}>
                                 <span style={styles.cardHeaderTitle}>Student Information</span>
@@ -224,7 +221,6 @@ const TicketDetail = () => {
                             </div>
                         </div>
 
-                        {/* Activity Log / Comments */}
                         <div style={{ ...styles.card, marginTop: 16 }}>
                             <div style={styles.cardHeader}>
                                 <span style={styles.cardHeaderTitle}>Activity Log</span>
@@ -252,7 +248,6 @@ const TicketDetail = () => {
                             )}
                         </div>
 
-                        {/* Admin Actions */}
                         {!isStudent && (canUpdate || canSubmitApproval || canApprove || canReject) && (
                             <div style={{ ...styles.card, marginTop: 16 }}>
                                 <div style={styles.cardHeader}>
@@ -325,7 +320,6 @@ const TicketDetail = () => {
                         )}
                     </div>
 
-                    {/* ── SIDEBAR ── */}
                     <div style={styles.sidebar}>
                         <div style={styles.sideCard}>
                             <div style={styles.sideSection}>
@@ -338,7 +332,6 @@ const TicketDetail = () => {
 
                             <div style={styles.sideSection}>
                                 <div style={styles.sideLabel}>Severity Level</div>
-
                                 {ticket.predictedPriorityLabel ? (
                                     <PriorityBadge
                                         label={ticket.predictedPriorityLabel}
@@ -347,6 +340,24 @@ const TicketDetail = () => {
                                 ) : (
                                     <div style={styles.sideMuted}>Not predicted</div>
                                 )}
+                            </div>
+
+                            <div style={styles.sideDivider} />
+
+                            <div style={styles.sideSection}>
+                                <div style={styles.sideLabel}>SLA Policy</div>
+                                <div style={styles.sideMuted}>
+                                    {ticket.slaPolicyName || 'Not attached'}
+                                </div>
+                            </div>
+
+                            <div style={styles.sideDivider} />
+
+                            <div style={styles.sideSection}>
+                                <div style={styles.sideLabel}>SLA Due At</div>
+                                <div style={styles.sideMuted}>
+                                    {formatDateTime(ticket.slaDueAt)}
+                                </div>
                             </div>
 
                             <div style={styles.sideDivider} />
@@ -369,7 +380,7 @@ const TicketDetail = () => {
 
                             <div style={styles.sideSection}>
                                 <div style={styles.sideLabel}>Assigned To</div>
-                                <div style={styles.sideMuted}>{ticket.departmentName || 'unassigned'} Devision Administrator</div>
+                                <div style={styles.sideMuted}>{ticket.departmentName || 'unassigned'} Division Administrator</div>
                             </div>
 
                             <div style={styles.sideDivider} />
@@ -422,7 +433,6 @@ const TicketDetail = () => {
     );
 };
 
-// Styles (unchanged from original)
 const C = {
     bg: '#f0f0f0',
     white: '#ffffff',
