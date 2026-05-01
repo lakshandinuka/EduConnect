@@ -26,8 +26,15 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String email;
 
+    // Compatibility with the JS KB project's users table if it already exists locally.
+    @Column(name = "username", unique = true)
+    private String legacyUsername;
+
     @Column(nullable = false)
     private String password;
+
+    @Column(name = "password_hash")
+    private String legacyPasswordHash;
 
     @Column(nullable = false)
     private String fullName;
@@ -36,6 +43,9 @@ public class User implements UserDetails {
 
     // Only for students
     private String studentId;
+
+    @Column(name = "academic_year")
+    private Integer academicYear;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -46,19 +56,16 @@ public class User implements UserDetails {
     @JoinColumn(name = "department_id")
     private Department department;
 
-    // private LocalDateTime createdAt;
-    // private LocalDateTime updatedAt;
-
-    // @PrePersist
-    // protected void onCreate() {
-    //     createdAt = LocalDateTime.now();
-    //     updatedAt = LocalDateTime.now();
-    // }
-
-    // @PreUpdate
-    // protected void onUpdate() {
-    //     updatedAt = LocalDateTime.now();
-    // }
+    @PrePersist
+    @PreUpdate
+    protected void syncLegacyColumns() {
+        if (legacyUsername == null || legacyUsername.isBlank()) {
+            legacyUsername = email;
+        }
+        if (legacyPasswordHash == null || legacyPasswordHash.isBlank()) {
+            legacyPasswordHash = password;
+        }
+    }
 
     // UserDetails methods
     @Override

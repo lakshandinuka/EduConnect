@@ -1,3 +1,85 @@
 @tailwind base;
 @tailwind components;
+
 @tailwind utilities;
+
+:root {
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
+  background: #ffffff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.prose h2 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.prose h3 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.prose p,
+.prose li {
+  line-height: 1.7;
+}
+
+.prose ul,
+.prose ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+}
+
