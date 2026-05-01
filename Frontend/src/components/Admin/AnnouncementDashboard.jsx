@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const adminName = user?.fullName || 'Admin';
 
@@ -33,11 +33,6 @@ export default function AdminDashboard() {
     window.dispatchEvent(new Event("notifUpdate"));
     fetchAnnouncements();
   }, [user, navigate]);
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this announcement?")) return;
@@ -79,16 +74,6 @@ export default function AdminDashboard() {
             onMouseLeave={hoverButtonLeave}
           >
             + New Announcement
-          </button>
-
-          <button
-            className="btn btn-danger"
-            onClick={handleLogout}
-            style={{ ...buttonStyle, background: '#dc2626' }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#b91c1c'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.transform = 'translateY(0)'; }}
-          >
-            Logout
           </button>
         </div>
       </div>

@@ -99,7 +99,7 @@ export default function AdminKBListPage() {
   };
 
   return (
-    <AdminShell title="Knowledge Base Items">
+    <AdminShell title="Admin Knowledge Hub">
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
