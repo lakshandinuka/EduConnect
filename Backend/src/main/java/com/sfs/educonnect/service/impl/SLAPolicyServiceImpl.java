@@ -25,6 +25,8 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
     @Transactional
     public SLAPolicyDTO createPolicy(SLAPolicyDTO policyDTO) {
 
+        normalizeTimeFields(policyDTO);
+
         SLAPolicy entity = slaMapper.toEntity(policyDTO);
 
         // Fix relationship
@@ -59,6 +61,8 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
     @Override
     @Transactional
     public SLAPolicyDTO updatePolicy(Long id, SLAPolicyDTO policyDTO) {
+
+        normalizeTimeFields(policyDTO);
 
         SLAPolicy existing = slaPolicyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("SLA Policy not found with id: " + id));
@@ -117,5 +121,17 @@ public class SLAPolicyServiceImpl implements SLAPolicyService {
         // Later:
         // - Loop through escalation rules
         // - Send notifications / update tickets
+    }
+
+    private void normalizeTimeFields(SLAPolicyDTO policyDTO) {
+        if (policyDTO.getResponseTime() != null) {
+            policyDTO.setResponseTimeValue(policyDTO.getResponseTime().getValue());
+            policyDTO.setResponseTimeUnit(policyDTO.getResponseTime().getUnit());
+        }
+
+        if (policyDTO.getResolutionTime() != null) {
+            policyDTO.setResolutionTimeValue(policyDTO.getResolutionTime().getValue());
+            policyDTO.setResolutionTimeUnit(policyDTO.getResolutionTime().getUnit());
+        }
     }
 }
