@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
+import DuplicateDetector from './DuplicateDetector';
 
 const statusClass = {
   OPEN: 'bg-amber-100 text-amber-800',
@@ -88,13 +89,32 @@ const TicketDetail = () => {
     return true;
   };
 
-  const runAction = async (action, successMessage = 'Action completed') => {
+  const saveDuplicateResponse = async (responseText) => {
+    if (user?.role !== 'DEPT_ADMIN' || !responseText) return;
+
+    try {
+      await api.post('/admin/save-response', {
+        ticketId: String(ticket?.id || ticketId),
+        responseText,
+        adminNote: '',
+      });
+    } catch (err) {
+      console.error('Failed to save duplicate response suggestion', err);
+    }
+  };
+
+  const runAction = async (action, successMessage = 'Action completed', options = {}) => {
     if (!requireComment()) return;
+
+    const responseText = commentText.trim();
 
     setActionLoading(true);
 
     try {
       await action();
+      if (options.saveDuplicateResponse) {
+        saveDuplicateResponse(responseText);
+      }
       alert(successMessage);
       fetchTicket();
       setCommentText('');
@@ -117,7 +137,8 @@ const TicketDetail = () => {
 
         await api.put(`/admin/tickets/${ticketId}`, payload);
       },
-      'Ticket updated'
+      'Ticket updated',
+      { saveDuplicateResponse: true }
     );
 
   const handleSubmitApproval = () =>
@@ -127,7 +148,8 @@ const TicketDetail = () => {
           comment: commentText,
         });
       },
-      'Ticket submitted for approval'
+      'Ticket submitted for approval',
+      { saveDuplicateResponse: true }
     );
 
   const handleApprove = () =>
@@ -252,6 +274,13 @@ const TicketDetail = () => {
                     <h2 className="text-lg font-extrabold text-sfs-ink">Admin Actions</h2>
 
                     <div className="mt-5 space-y-5">
+                      {isDeptAdmin && (
+                        <DuplicateDetector
+                          ticketText={ticket.inquiryText}
+                          onSelectResponse={setCommentText}
+                        />
+                      )}
+
                       <label>
                         <span className="sfs-label">
                           Comment <span className="text-red-500">*</span>

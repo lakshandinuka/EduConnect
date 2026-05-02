@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "EduConnect",
+			"path": "../Desktop/KB/EduConnect"
+		}
+	],
+	"settings": {
+		"java.compile.nullAnalysis.mode": "automatic"
+	}
+}
