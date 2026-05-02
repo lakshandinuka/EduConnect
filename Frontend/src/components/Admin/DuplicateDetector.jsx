@@ -9,7 +9,7 @@ const normalizeDuplicate = (duplicate) => ({
   existingResponse: duplicate.existingResponse ?? duplicate.existing_response ?? '',
 });
 
-const DuplicateDetector = ({ ticketText, onSelectResponse }) => {
+const DuplicateDetector = ({ ticketText, ticketId, onSelectResponse }) => {
   const [duplicates, setDuplicates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +24,11 @@ const DuplicateDetector = ({ ticketText, onSelectResponse }) => {
     setError('');
 
     try {
-      const res = await api.post('/admin/detect-duplicates', { ticketText });
+      const res = await api.post('/admin/detect-duplicates', {
+        ticketText,
+        ticketId,
+      });
+
       const similarTickets = Array.isArray(res.data?.similarTickets)
         ? res.data.similarTickets
         : [];

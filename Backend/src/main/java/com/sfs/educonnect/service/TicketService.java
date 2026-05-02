@@ -8,22 +8,27 @@ import com.sfs.educonnect.dto.TicketUpdateRequest;
 import com.sfs.educonnect.entity.Attachment;
 import com.sfs.educonnect.entity.Comment;
 import com.sfs.educonnect.entity.Department;
+import com.sfs.educonnect.entity.InquiryType;
+import com.sfs.educonnect.entity.SLAPolicy;
 import com.sfs.educonnect.entity.Ticket;
 import com.sfs.educonnect.entity.User;
-import com.sfs.educonnect.entity.InquiryType;
 import com.sfs.educonnect.enums.Role;
+import com.sfs.educonnect.enums.SLAPriority;
+import com.sfs.educonnect.enums.SLAStatus;
 import com.sfs.educonnect.enums.TicketStatus;
 import com.sfs.educonnect.repository.AttachmentRepository;
+import com.sfs.educonnect.repository.CommentRepository;
 import com.sfs.educonnect.repository.DepartmentRepository;
 import com.sfs.educonnect.repository.InquiryTypeRepository;
+import com.sfs.educonnect.repository.SLAPolicyRepository;
 import com.sfs.educonnect.repository.TicketRepository;
 import com.sfs.educonnect.repository.UserRepository;
-import com.sfs.educonnect.repository.CommentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -52,7 +57,10 @@ public class TicketService {
     private CommentRepository commentRepository;
 
     @Autowired
-    private PriorityPredictionService priorityPredictionService; // <-- NEW
+    private PriorityPredictionService priorityPredictionService;
+
+    @Autowired
+    private SLAPolicyRepository slaPolicyRepository;
 
     @SuppressWarnings("null")
     public TicketResponse createTicket(Long studentId, TicketRequest request) {
@@ -81,14 +89,68 @@ public class TicketService {
         ticket.setPredictedPriorityLabel(result.priorityLabel());
         ticket.setPriorityConfidence(result.confidence());
 
+        // ---- SLA policy auto attach ----
+        SLAPriority slaPriority = convertToSLAPriority(result.priorityLabel());
+
+        SLAPolicy slaPolicy = slaPolicyRepository
+                .findByDepartmentAndPriorityAndStatus(
+                        department.getName(),
+                        slaPriority,
+                        SLAStatus.ACTIVE
+                )
+                .orElse(null);
+
+        if (slaPolicy != null) {
+            ticket.setSlaPolicy(slaPolicy);
+            ticket.setSlaDueAt(
+                    calculateDueDate(
+                            LocalDateTime.now(),
+                            slaPolicy.getResolutionTimeValue(),
+                            slaPolicy.getResolutionTimeUnit()
+                    )
+            );
+        }
+        // --------------------------------
+
         ticket = ticketRepository.save(ticket);
         return mapToResponse(ticket);
     }
 
-    /**
-     * Preprocesses raw text to match the training pipeline:
-     * lowercases and removes non-alphanumeric characters (retains spaces).
-     */
+    private SLAPriority convertToSLAPriority(String priorityLabel) {
+        if (priorityLabel == null) {
+            return SLAPriority.MEDIUM;
+        }
+
+        try {
+            return SLAPriority.valueOf(priorityLabel.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return SLAPriority.MEDIUM;
+        }
+    }
+
+    private LocalDateTime calculateDueDate(LocalDateTime startTime, Integer value, String unit) {
+        if (value == null || unit == null) {
+            return startTime.plusHours(24);
+        }
+
+        switch (unit.toLowerCase()) {
+            case "minute":
+            case "minutes":
+                return startTime.plusMinutes(value);
+
+            case "hour":
+            case "hours":
+                return startTime.plusHours(value);
+
+            case "day":
+            case "days":
+                return startTime.plusDays(value);
+
+            default:
+                return startTime.plusHours(value);
+        }
+    }
+
     private String preprocessText(String raw) {
         if (raw == null)
             return "";
@@ -108,12 +170,10 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-        // Security: ensure the ticket belongs to the student
         if (!ticket.getStudent().getId().equals(studentId)) {
             throw new RuntimeException("You are not authorized to modify this ticket");
         }
 
-        // Only allow adding attachments if ticket is not yet resolved/approved
         if (ticket.getTicketStatus() != TicketStatus.OPEN
                 && ticket.getTicketStatus() != TicketStatus.IN_PROGRESS) {
             throw new RuntimeException("Cannot add attachments to a ticket that is already resolved or closed");
@@ -139,7 +199,6 @@ public class TicketService {
             throw new RuntimeException("You are not authorized to delete this ticket");
         }
 
-        // Allow deletion only if status is OPEN (unsolved)
         if (ticket.getTicketStatus() != TicketStatus.OPEN) {
             throw new RuntimeException("Cannot delete a ticket that has already been processed");
         }
@@ -164,13 +223,12 @@ public class TicketService {
         response.setPriorityConfidence(ticket.getPriorityConfidence());
         response.setSatisfactionScore(ticket.getSatisfactionScore());
 
-        // Map attachments to DTOs with download URL
         List<AttachmentDto> attachmentDtos = ticket.getAttachments().stream()
                 .map(att -> {
                     AttachmentDto dto = new AttachmentDto();
                     dto.setId(att.getId());
                     dto.setFileName(att.getFileName());
-                    dto.setFileUrl("/api/tickets/attachments/" + att.getId()); // endpoint to serve file
+                    dto.setFileUrl("/api/tickets/attachments/" + att.getId());
                     dto.setUploadedAt(att.getUploadedAt());
                     return dto;
                 })
@@ -189,6 +247,12 @@ public class TicketService {
                 })
                 .collect(Collectors.toList());
         response.setComments(commentDtos);
+
+        if (ticket.getSlaPolicy() != null) {
+            response.setSlaPolicyId(ticket.getSlaPolicy().getId());
+            response.setSlaPolicyName(ticket.getSlaPolicy().getName());
+        }
+        response.setSlaDueAt(ticket.getSlaDueAt());
 
         return response;
     }
@@ -219,7 +283,6 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-        // Check authorization: dept admin can only update tickets of their department
         if (admin.getRole() == Role.DEPT_ADMIN) {
             if (!ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
                 throw new RuntimeException("You are not authorized to update this ticket");
@@ -228,7 +291,6 @@ public class TicketService {
             throw new RuntimeException("Only admins can update tickets");
         }
 
-        // Update status if provided - with proper validation
         if (request.getStatus() != null) {
             TicketStatus newStatus = request.getStatus();
             TicketStatus currentStatus = ticket.getTicketStatus();
@@ -254,7 +316,6 @@ public class TicketService {
             ticket.setTicketStatus(newStatus);
         }
 
-        // Reassign department if provided (only dept admin or super admin can reassign)
         if (request.getNewDepartmentId() != null) {
             Department newDept = departmentRepository.findById(request.getNewDepartmentId())
                     .orElseThrow(() -> new RuntimeException("Department not found"));
@@ -263,7 +324,6 @@ public class TicketService {
 
         ticket = ticketRepository.save(ticket);
 
-        // Add comment if provided
         if (request.getComment() != null && !request.getComment().trim().isEmpty()) {
             addComment(ticket, admin, request.getComment());
         }
@@ -276,7 +336,6 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-        // Only dept admin of the ticket's department can submit
         if (admin.getRole() != Role.DEPT_ADMIN ||
                 !ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
             throw new RuntimeException("Only department admin can submit for approval");
@@ -333,7 +392,6 @@ public class TicketService {
             throw new RuntimeException("Only tickets in RESOLVED status can be rejected");
         }
 
-        // Set back to OPEN or IN_PROGRESS? Typically set to OPEN so admin can rework.
         ticket.setTicketStatus(TicketStatus.OPEN);
         ticket = ticketRepository.save(ticket);
 
@@ -369,7 +427,6 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-        // Dept Admin restriction
         if (admin.getRole() == Role.DEPT_ADMIN || admin.getRole() == Role.SUPER_ADMIN) {
             if (admin.getRole() == Role.DEPT_ADMIN
                     && !ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
