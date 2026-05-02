@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { sendChatMessage } from '../../services/chatbotService';
 import { useAuth } from '../../context/AuthContext';
 
-const FALLBACK_MESSAGE = 'sorry i cant help you with that. pls refer the knowledgebase for more info';
+const FALLBACK_MESSAGE = 'Sorry, I can\'t help you with that. Please refer the knowledgebase for more information.';
 
 export default function ChatbotWidget() {
   const { user } = useAuth();
