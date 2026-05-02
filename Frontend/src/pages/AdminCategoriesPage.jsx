@@ -82,7 +82,7 @@ export default function AdminCategoriesPage() {
   };
 
   return (
-    <AdminShell title="Categories">
+    <AdminShell title="Admin Category Manager">
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <p className="text-sm text-slate-600">Manage Knowledgebase categories.</p>

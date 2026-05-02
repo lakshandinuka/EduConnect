@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Large Model Files ###
+priority-service/ticket_priority_model/*.safetensors
+anomaly-service/model/*.safetensors
