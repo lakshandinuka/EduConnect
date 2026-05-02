@@ -5,10 +5,10 @@ import SLAStatusBadge from './SLAStatusBadge';
 const SLATable = ({ policies = [], onDelete }) => {
   if (!Array.isArray(policies) || policies.length === 0) {
     return (
-      <div className="rounded-2xl border border-blue-100/60 bg-gradient-to-b from-blue-50/50 to-white overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.03)]">
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-card">
         <div className="flex flex-col items-center justify-center py-24 px-6 gap-4">
-          <div className="w-16 h-16 rounded-full bg-blue-100/50 flex items-center justify-center mb-2">
-            <span className="text-3xl">📋</span>
+          <div className="w-16 h-16 rounded-full bg-sfs-blue/10 text-sfs-blue flex items-center justify-center mb-2 text-sm font-bold uppercase">
+            SLA
           </div>
           <p className="text-slate-800 font-bold text-lg">No SLA policies found</p>
           <p className="text-slate-500 text-sm max-w-sm text-center">
@@ -20,11 +20,11 @@ const SLATable = ({ policies = [], onDelete }) => {
   }
 
   return (
-    <div className="rounded-2xl border border-blue-100/80 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
+    <div className="rounded-xl border border-slate-200 bg-white shadow-card overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-slate-50/80 border-b border-blue-100/60">
+            <tr className="bg-slate-50/80 border-b border-slate-200">
               {[
                 'Policy Name',
                 'Department',
@@ -49,7 +49,7 @@ const SLATable = ({ policies = [], onDelete }) => {
             {policies.map((policy, index) => (
               <tr
                 key={policy?.id || index}
-                className="border-b border-slate-100 hover:bg-blue-50/40 transition-colors duration-200"
+                className="border-b border-slate-100 hover:bg-sfs-blue/5 transition-colors duration-200"
               >
                 <td className="px-5 py-4 font-semibold text-slate-900 text-sm whitespace-nowrap">
                   {policy?.name || '-'}
@@ -83,7 +83,7 @@ const SLATable = ({ policies = [], onDelete }) => {
                   <div className="flex items-center gap-2">
                     <Link
                       to={`/admin/sla/${policy?.id}`}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-600 hover:text-white transition-all"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-sfs-blue bg-sfs-blue/10 border border-sfs-blue/20 hover:bg-sfs-blue hover:text-white transition-all"
                     >
                       View
                     </Link>
@@ -114,7 +114,6 @@ const SLATable = ({ policies = [], onDelete }) => {
               </tr>
             ))}
           </tbody>
-
         </table>
       </div>
     </div>

@@ -11,7 +11,7 @@ export default function AdminMessages() {
       const res = await api.get('/messages', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(res.data);
+      setMessages(res.data || []);
     } catch (err) {
       console.error('Error loading messages', err);
     }
@@ -26,7 +26,7 @@ export default function AdminMessages() {
       await api.put(`/messages/${id}/reply`, replyTexts[id], {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' }
       });
-      localStorage.setItem("studentNotif", "true");
+      localStorage.setItem('studentNotif', 'true');
       fetchMessages();
     } catch (err) {
       console.error('Failed to send reply', err);
@@ -35,13 +35,13 @@ export default function AdminMessages() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this message?")) return;
+    if (!window.confirm('Are you sure you want to delete this message?')) return;
 
     try {
       await api.delete(`/messages/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMessages(messages.filter(msg => msg.id !== id)); // update UI immediately
+      setMessages((prev) => prev.filter((msg) => msg.id !== id));
       alert('Message deleted successfully!');
     } catch (err) {
       console.error('Failed to delete message', err);
@@ -49,89 +49,49 @@ export default function AdminMessages() {
     }
   };
 
-  const cardStyle = {
-    border: '2px solid #d1d5db',
-    borderRadius: '10px',
-    padding: '15px',
-    marginBottom: '15px',
-    background: '#ffffff',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-    transition: 'transform 0.2s, box-shadow 0.2s'
-  };
-
-  const hoverEffect = e => {
-    e.currentTarget.style.transform = 'translateY(-2px)';
-    e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.1)';
-  };
-
-  const hoverOut = e => {
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
-  };
-
-  const buttonStyle = {
-    padding: '8px 16px',
-    borderRadius: '8px',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'background 0.2s, transform 0.2s',
-  };
-
   return (
-    <div style={{ marginTop: '40px' }}>
-      <h2>Student Messages</h2>
+    <section className="sfs-panel-pad">
+      <h2 className="text-xl font-extrabold text-sfs-ink">Student Messages</h2>
 
       {messages.length === 0 ? (
-        <p>No messages yet.</p>
+        <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
+          No messages yet.
+        </div>
       ) : (
-        messages.map(msg => (
-          <div
-            key={msg.id}
-            style={cardStyle}
-            onMouseEnter={hoverEffect}
-            onMouseLeave={hoverOut}
-          >
-            <p><b>Student IT Number:</b> {msg.sender}</p>
-            <p><b>Message:</b> {msg.content}</p>
-            <p><b>Reply:</b> {msg.reply ? msg.reply : <i>No reply yet</i>}</p>
+        <div className="mt-4 space-y-4">
+          {messages.map((msg) => (
+            <article key={msg.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm text-slate-700">
+                <span className="font-bold text-sfs-ink">Student IT Number:</span> {msg.sender}
+              </p>
+              <p className="mt-2 text-sm text-slate-700">
+                <span className="font-bold text-sfs-ink">Message:</span> {msg.content}
+              </p>
+              <p className="mt-2 text-sm text-slate-700">
+                <span className="font-bold text-sfs-ink">Reply:</span>{' '}
+                {msg.reply ? msg.reply : <span className="italic text-slate-500">No reply yet</span>}
+              </p>
 
-            <textarea
-              placeholder="Type reply..."
-              style={{
-                width: '100%',
-                height: '70px',
-                marginTop: '10px',
-                borderRadius: '8px',
-                border: '1px solid #ccc',
-                padding: '8px',
-                resize: 'vertical'
-              }}
-              value={replyTexts[msg.id] || ''}
-              onChange={(e) => setReplyTexts({ ...replyTexts, [msg.id]: e.target.value })}
-            />
+              <textarea
+                placeholder="Type reply..."
+                className="sfs-textarea mt-4"
+                rows={3}
+                value={replyTexts[msg.id] || ''}
+                onChange={(e) => setReplyTexts({ ...replyTexts, [msg.id]: e.target.value })}
+              />
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <button
-                onClick={() => handleReply(msg.id)}
-                style={{ ...buttonStyle, background: '#2563eb', color: 'white', minWidth: '120px' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#1d4ed8'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#2563eb'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                Send Reply
-              </button>
-
-              <button
-                onClick={() => handleDelete(msg.id)}
-                style={{ ...buttonStyle, background: '#ef4444', color: 'white', minWidth: '120px' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#dc2626'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => handleReply(msg.id)} className="sfs-btn-primary">
+                  Send Reply
+                </button>
+                <button type="button" onClick={() => handleDelete(msg.id)} className="sfs-btn-danger">
+                  Delete
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
-    </div>
+    </section>
   );
 }

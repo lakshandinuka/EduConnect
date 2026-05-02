@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../services/api';
 
 export default function AnnouncementForm({ isOpen, onClose, onSuccess, editData }) {
@@ -19,27 +19,23 @@ export default function AnnouncementForm({ isOpen, onClose, onSuccess, editData 
         isImportant: editData.isImportant || false,
         expiry: editData.expiry ? editData.expiry.slice(0, 16) : ''
       });
-    } else {
-      setForm({
-        title: '',
-        description: '',
-        semester: '',
-        isImportant: false,
-        expiry: ''
-      });
+      return;
     }
+
+    setForm({
+      title: '',
+      description: '',
+      semester: '',
+      isImportant: false,
+      expiry: ''
+    });
   }, [editData]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !form.title.trim() ||
-      !form.description.trim() ||
-      !form.semester ||
-      !form.expiry
-    ) {
-      alert("⚠️ Please fill all fields before submitting!");
+    if (!form.title.trim() || !form.description.trim() || !form.semester || !form.expiry) {
+      alert('Please fill all fields before submitting.');
       return;
     }
 
@@ -61,128 +57,94 @@ export default function AnnouncementForm({ isOpen, onClose, onSuccess, editData 
   if (!isOpen) return null;
 
   return (
-    <div className="modal" style={modalStyle}>
-      <div style={modalContentStyle}>
-        <h3 style={{ marginBottom: '20px', color: '#065f46' }}>
-          {editData ? 'Edit Announcement' : 'Create New Announcement'}
-        </h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-sfs-ink/40 px-4">
+      <section className="sfs-panel-pad w-full max-w-xl">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-extrabold text-sfs-ink">
+            {editData ? 'Edit Announcement' : 'Create New Announcement'}
+          </h2>
+          <button type="button" onClick={onClose} className="sfs-btn-secondary px-3 py-1.5">
+            Close
+          </button>
+        </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <input
-            type="text"
-            placeholder="Title"
-            value={form.title}
-            onChange={e => setForm({ ...form, title: e.target.value })}
-            required
-            style={inputStyle}
-          />
-
-          <textarea
-            placeholder="Description / Content"
-            value={form.description}
-            onChange={e => setForm({ ...form, description: e.target.value })}
-            rows="5"
-            required
-            style={{ ...inputStyle, resize: 'vertical' }}
-          />
-
-          <select
-            value={form.semester}
-            onChange={e => setForm({ ...form, semester: e.target.value })}
-            required
-            style={{ ...inputStyle, marginTop: '10px' }}
-          >
-            <option value="">Select Semester</option>
-            <option value="Y1S1">Y1S1</option>
-            <option value="Y1S2">Y1S2</option>
-            <option value="Y2S1">Y2S1</option>
-            <option value="Y2S2">Y2S2</option>
-            <option value="Y3S1">Y3S1</option>
-            <option value="Y3S2">Y3S2</option>
-            <option value="Y4S1">Y4S1</option>
-            <option value="Y4S2">Y4S2</option>
-            <option value="ALL">ALL</option>
-          </select>
-
-          <label style={{ display: 'block', margin: '15px 0' }}>
-            Expiry Date & Time:
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+          <label>
+            <span className="sfs-label">Title</span>
             <input
-              type="datetime-local"
-              value={form.expiry}
-              onChange={e => setForm({ ...form, expiry: e.target.value })}
-              style={{ ...inputStyle, marginTop: '5px' }}
+              type="text"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              className="sfs-input"
               required
             />
           </label>
 
-          <label style={{ display: 'block', margin: '15px 0' }}>
+          <label>
+            <span className="sfs-label">Description / Content</span>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows="5"
+              className="sfs-textarea"
+              required
+            />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label>
+              <span className="sfs-label">Semester</span>
+              <select
+                value={form.semester}
+                onChange={(e) => setForm({ ...form, semester: e.target.value })}
+                className="sfs-input"
+                required
+              >
+                <option value="">Select Semester</option>
+                <option value="Y1S1">Y1S1</option>
+                <option value="Y1S2">Y1S2</option>
+                <option value="Y2S1">Y2S1</option>
+                <option value="Y2S2">Y2S2</option>
+                <option value="Y3S1">Y3S1</option>
+                <option value="Y3S2">Y3S2</option>
+                <option value="Y4S1">Y4S1</option>
+                <option value="Y4S2">Y4S2</option>
+                <option value="ALL">ALL</option>
+              </select>
+            </label>
+
+            <label>
+              <span className="sfs-label">Expiry Date & Time</span>
+              <input
+                type="datetime-local"
+                value={form.expiry}
+                onChange={(e) => setForm({ ...form, expiry: e.target.value })}
+                className="sfs-input"
+                required
+              />
+            </label>
+          </div>
+
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
             <input
               type="checkbox"
               checked={form.isImportant}
-              onChange={e => setForm({ ...form, isImportant: e.target.checked })}
+              onChange={(e) => setForm({ ...form, isImportant: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-sfs-blue focus:ring-sfs-blue"
             />
-            <span style={{ marginLeft: '8px' }}>Mark as Important</span>
+            Mark as Important
           </label>
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{ ...submitButtonStyle, background: '#6b7280' }}
-            >
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="sfs-btn-secondary">
               Cancel
             </button>
-
-            <button type="submit" style={submitButtonStyle}>
+            <button type="submit" className="sfs-btn-primary">
               {editData ? 'Update Announcement' : 'Create Announcement'}
             </button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   );
 }
-
-// ================= STYLES =================
-const modalStyle = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  background: 'rgba(0,0,0,0.25)',
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100%',
-  height: '100%'
-};
-
-const modalContentStyle = {
-  width: '500px',
-  padding: '25px',
-  borderRadius: '12px',
-  background: '#ffffff',
-  boxShadow: '0 6px 15px rgba(0,0,0,0.15)',
-  transition: 'transform 0.2s'
-};
-
-const inputStyle = {
-  width: '100%',
-  padding: '10px',
-  borderRadius: '8px',
-  border: '2px solid #d1d5db',
-  marginBottom: '10px',
-  outline: 'none',
-  transition: 'border 0.2s'
-};
-
-const submitButtonStyle = {
-  flex: 1,
-  padding: '10px',
-  borderRadius: '8px',
-  border: 'none',
-  background: '#10b981',
-  color: 'white',
-  cursor: 'pointer',
-  transition: 'background 0.2s, transform 0.2s',
-  fontWeight: '600'
-};

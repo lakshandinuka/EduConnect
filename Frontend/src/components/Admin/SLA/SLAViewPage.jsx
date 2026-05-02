@@ -31,48 +31,42 @@ const SLAViewPage = () => {
 
   if (!policy) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500">
+      <div className="sfs-page flex items-center justify-center text-slate-500">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 text-slate-900 pb-12">
-      <div className="max-w-5xl mx-auto px-6 pt-10">
+    <div className="sfs-page pb-12">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="sfs-page-title">
               SLA Policy Details
             </h1>
-            <p className="text-slate-500 text-sm font-medium mt-1">
+            <p className="sfs-muted mt-1">
               View the details and escalation rules for this policy.
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link
-              to="/admin/sla"
-              className="px-5 py-2.5 rounded-xl font-semibold text-sm text-slate-600 bg-white border border-slate-300 hover:bg-slate-50"
-            >
+            <Link to="/admin/sla" className="sfs-btn-secondary">
               Back to List
             </Link>
 
-            <Link
-              to={`/admin/sla/${policy.id}/edit`}
-              className="px-5 py-2.5 rounded-xl font-semibold text-sm text-white bg-blue-600 hover:bg-blue-700"
-            >
+            <Link to={`/admin/sla/${policy.id}/edit`} className="sfs-btn-primary">
               Edit Policy
             </Link>
           </div>
         </div>
 
-        <div className="bg-white border border-blue-100 rounded-2xl shadow-sm p-6 sm:p-8">
+        <div className="sfs-panel p-6 sm:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
             <InfoCard label="Policy Name" value={policy.name || '-'} />
 
             <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-              <span className="text-xs font-bold text-slate-500 uppercase">
+              <span className="sfs-label">
                 Status
               </span>
               <div className="mt-2">
@@ -83,7 +77,7 @@ const SLAViewPage = () => {
             <InfoCard label="Department" value={policy.department || '-'} />
 
             <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-              <span className="text-xs font-bold text-slate-500 uppercase">
+              <span className="sfs-label">
                 Priority
               </span>
               <div className="mt-2">
@@ -108,14 +102,14 @@ const SLAViewPage = () => {
             </h3>
 
             {!policy.escalationRules || policy.escalationRules.length === 0 ? (
-              <div className="py-8 px-6 bg-blue-50 border border-dashed border-blue-200 rounded-xl text-center text-sm font-medium text-slate-500">
+              <div className="py-8 px-6 bg-sfs-blue/5 border border-dashed border-sfs-blue/20 rounded-xl text-center text-sm font-medium text-slate-500">
                 No escalation rules defined for this policy.
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-blue-100 shadow-sm">
+              <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                 <table className="w-full text-left bg-white">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-blue-100">
+                    <tr className="bg-slate-50 border-b border-slate-200">
                       <th className="px-5 py-4 text-xs font-bold text-slate-500 uppercase">
                         Level
                       </th>
@@ -141,7 +135,7 @@ const SLAViewPage = () => {
                           {rule.after?.value ?? rule.afterValue ?? '-'}{' '}
                           {rule.after?.unit ?? rule.afterUnit ?? ''}
                         </td>
-                        <td className="px-5 py-4 text-sm font-semibold text-blue-700">
+                        <td className="px-5 py-4 text-sm font-semibold text-sfs-blue">
                           {rule.escalateTo || '-'}
                         </td>
                         <td className="px-5 py-4 text-sm">
@@ -162,7 +156,7 @@ const SLAViewPage = () => {
 
 const InfoCard = ({ label, value }) => (
   <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
-    <span className="text-xs font-bold text-slate-500 uppercase">{label}</span>
+    <span className="sfs-label">{label}</span>
     <div className="text-base font-semibold text-slate-900 mt-2">{value}</div>
   </div>
 );

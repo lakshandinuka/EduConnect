@@ -105,7 +105,7 @@ export default function HomePage() {
   const canEdit = Boolean(isAdmin);
 
   return (
-    <div className="min-h-screen bg-white text-sfs-ink">
+    <div className="min-h-screen bg-sfs-mist text-sfs-ink">
 
       {/* Admin edit bar */}
       {canEdit && (

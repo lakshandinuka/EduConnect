@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, ResponsiveContainer
 } from "recharts";
 
-const COLORS = ["#0d2b6b", "#4f86f7", "#22c55e", "#f97316", "#a855f7", "#ec4899"];
+const COLORS = ["#004aad", "#334155", "#22c55e", "#a6140c", "#8b5cf6", "#ec4899"];
 
 // Professional Dropdown Style
 const dropdownStyle = {
@@ -15,8 +15,8 @@ const dropdownStyle = {
   border: "none",
   fontSize: "13px",
   fontWeight: "600",
-  background: "#0d2b6b", // Dark Blue
-  color: "#ffffff",      // White text
+  background: "#004aad",
+  color: "#ffffff",
   cursor: "pointer",
   outline: "none",
   boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
@@ -24,7 +24,7 @@ const dropdownStyle = {
 
 const th = {
   padding: "10px 16px", textAlign: "left",
-  color: "#0d2b6b", fontWeight: 600, fontSize: 11
+  color: "#334155", fontWeight: 700, fontSize: 11
 };
 const td = {
   padding: "10px 16px", textAlign: "left"
@@ -72,26 +72,20 @@ export default function AnalyticsDashboard() {
   return (
     <>
       <Navbar />
-      <div style={{
-        background: "#f0f4ff",
-        minHeight: "100vh",
-        width: "100vw",
-        padding: "32px 40px",
-        fontFamily: "sans-serif",
-        boxSizing: "border-box"
-      }}>
+      <div className="sfs-page">
+        <main className="sfs-container">
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <h1 style={{ color: "#1a2d53", fontSize: 36, fontWeight: "bold", marginBottom: 12 }}>
+        <div className="mb-8 text-center">
+          <h1 className="sfs-page-title">
             SFS Academy – Analytics Dashboard
           </h1>
-          <p style={{ color: "#555", fontSize: 16 }}>
+          <p className="sfs-muted mt-2">
             Real-time ticket support insights
           </p>
         </div>
 
         {/* KPI Cards */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 32, flexWrap: "wrap" }}>
+        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <KPICard title="Total Tickets" value={total.totalTickets ?? "–"} />
           <KPICard title="Avg Resolution Time" value={`${resolution.avgResolutionHours ?? "–"} hrs`} />
           <KPICard title="Avg First Response" value={`${resolution.avgFirstResponseHours ?? "–"} hrs`} />
@@ -102,21 +96,16 @@ export default function AnalyticsDashboard() {
 
         {/* Ticket Trend by Department */}
         <Section title="Ticket Volume by Department">
-          <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+          <div className="mb-4 flex flex-wrap gap-2">
             {["All", "IT Support", "Finance", "Academic Affairs", "Library", "Student Services"].map(dept => (
               <button
                 key={dept}
                 onClick={() => setSelectedDept(dept)}
-                style={{
-                  padding: "6px 14px",
-                  borderRadius: 20,
-                  border: "none",
-                  cursor: "pointer",
-                  background: selectedDept === dept ? "#0d2b6b" : "#e8edf8",
-                  color: selectedDept === dept ? "#fff" : "#0d2b6b",
-                  fontWeight: selectedDept === dept ? "bold" : "normal",
-                  fontSize: 12
-                }}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+                  selectedDept === dept
+                    ? 'bg-sfs-blue text-white'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                }`}
               >
                 {dept}
               </button>
@@ -131,14 +120,14 @@ export default function AnalyticsDashboard() {
               <Legend />
               {selectedDept === "All" ? (
                 <>
-                  <Line type="monotone" dataKey="IT Support" stroke="#0d2b6b" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Finance" stroke="#4f86f7" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="IT Support" stroke="#004aad" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Finance" stroke="#334155" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="Academic Affairs" stroke="#22c55e" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="Library" stroke="#a855f7" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="Student Services" stroke="#ec4899" strokeWidth={2} dot={false} />
                 </>
               ) : (
-                <Line type="monotone" dataKey="count" stroke="#0d2b6b" strokeWidth={2} dot={false} name={selectedDept} />
+                <Line type="monotone" dataKey="count" stroke="#004aad" strokeWidth={2} dot={false} name={selectedDept} />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -155,15 +144,15 @@ export default function AnalyticsDashboard() {
               onChange={e => { setAnomalyFilter(e.target.value); setShowCount(7); }}
               style={dropdownStyle}
             >
-              <option value="All" style={{ background: "#fff", color: "#0d2b6b" }}>All Severities</option>
-              <option value="HIGH" style={{ background: "#fff", color: "#0d2b6b" }}>HIGH only</option>
-              <option value="MEDIUM" style={{ background: "#fff", color: "#0d2b6b" }}>MEDIUM only</option>
+              <option value="All" style={{ background: "#fff", color: "#004aad" }}>All Severities</option>
+              <option value="HIGH" style={{ background: "#fff", color: "#004aad" }}>HIGH only</option>
+              <option value="MEDIUM" style={{ background: "#fff", color: "#004aad" }}>MEDIUM only</option>
             </select>
           </div>
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "#f0f4ff" }}>
+              <tr style={{ background: "#f8fafc" }}>
                 <th style={th}>Ticket ID</th>
                 <th style={th}>Severity</th>
                 <th style={th}>Anomaly Score</th>
@@ -186,7 +175,7 @@ export default function AnalyticsDashboard() {
                       }}
                     >
                       <td style={td}>
-                        <span style={{ fontWeight: 600, color: "#0d2b6b" }}>#{a.ticket_id}</span>
+                        <span style={{ fontWeight: 600, color: "#004aad" }}>#{a.ticket_id}</span>
                       </td>
                       <td style={td}>
                         <span style={{
@@ -201,7 +190,7 @@ export default function AnalyticsDashboard() {
                       <td style={{ ...td, color: "#555", fontSize: 12 }}>
                         {a.reasons ? a.reasons[0] : "Unusual pattern"}
                       </td>
-                      <td style={{ ...td, color: "#4f86f7" }}>
+                      <td style={{ ...td, color: "#004aad" }}>
                         {expandedTicket === i ? "▲ Hide" : "▼ View"}
                       </td>
                     </tr>
@@ -245,8 +234,8 @@ export default function AnalyticsDashboard() {
                 onClick={() => setShowCount(showCount + 3)}
                 style={{
                   padding: "8px 24px", borderRadius: 20,
-                  border: "1px solid #0d2b6b", background: "#fff",
-                  color: "#0d2b6b", cursor: "pointer", fontSize: 13
+                  border: "1px solid #004aad", background: "#fff",
+                  color: "#004aad", cursor: "pointer", fontSize: 13
                 }}
               >
                 Show more ({anomalies.filter(a => anomalyFilter === "All" || a.severity === anomalyFilter).length - showCount} remaining)
@@ -294,7 +283,7 @@ export default function AnalyticsDashboard() {
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={status} margin={{ bottom: 40 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="status" tick={{ fontSize: 11, fontWeight: "bold", fill: "#0d2b6b" }}
+                <XAxis dataKey="status" tick={{ fontSize: 11, fontWeight: "bold", fill: "#004aad" }}
                   angle={0} textAnchor="middle" interval={0} />
                 <YAxis />
                 <Tooltip />
@@ -312,9 +301,9 @@ export default function AnalyticsDashboard() {
               onChange={(e) => setSelectedAgentName(e.target.value)}
               style={dropdownStyle}
             >
-              <option value="All" style={{ background: "#fff", color: "#0d2b6b" }}>All Agents</option>
+              <option value="All" style={{ background: "#fff", color: "#004aad" }}>All Agents</option>
               {agents.map((a, idx) => (
-                <option key={idx} value={a.agent_name} style={{ background: "#fff", color: "#0d2b6b" }}>
+                <option key={idx} value={a.agent_name} style={{ background: "#fff", color: "#004aad" }}>
                   {a.agent_name}
                 </option>
               ))}
@@ -334,11 +323,12 @@ export default function AnalyticsDashboard() {
               <YAxis dataKey="agent_name" type="category" width={100} tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend verticalAlign="bottom" height={36}/>
-              <Bar dataKey="ticketCount" fill="#0d2b6b" name="Tickets Handled" />
-              <Bar dataKey="avgResolutionHours" fill="#4f86f7" name="Avg Resolution (hrs)" />
+              <Bar dataKey="ticketCount" fill="#004aad" name="Tickets Handled" />
+              <Bar dataKey="avgResolutionHours" fill="#334155" name="Avg Resolution (hrs)" />
             </BarChart>
           </ResponsiveContainer>
         </Section>
+        </main>
       </div>
     </>
   );
@@ -346,35 +336,27 @@ export default function AnalyticsDashboard() {
 
 function KPICard({ title, value, alert }) {
   return (
-    <div style={{
-      background: alert ? "#fff1f0" : "#fff",
-      border: `2px solid ${alert ? "#f87171" : "#1e4db7"}`,
-      borderRadius: 12, padding: "16px 24px", flex: "1 1 160px", textAlign: "center",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-    }}>
-      <div style={{ fontSize: 13, color: "#666", marginBottom: 6 }}>{title}</div>
-      <div style={{ fontSize: 24, fontWeight: "bold", color: alert ? "#dc2626" : "#0d2b6b" }}>{value}</div>
+    <div className={`rounded-xl border bg-white p-4 text-center shadow-sm ${alert ? 'border-red-200' : 'border-slate-200'}`}>
+      <div className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-500">{title}</div>
+      <div className={`text-2xl font-extrabold ${alert ? 'text-red-600' : 'text-sfs-blue'}`}>{value}</div>
     </div>
   );
 }
 
 function Section({ title, children, style }) {
   return (
-    <div style={{
-      background: "#fff", borderRadius: 12, padding: 20,
-      marginBottom: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.07)", ...style
-    }}>
-      <h2 style={{ color: "#0d2b6b", marginBottom: 16, fontSize: 16, borderBottom: "1px solid #eee", paddingBottom: 8 }}>{title}</h2>
+    <section className="sfs-panel-pad mb-6" style={style}>
+      <h2 className="mb-4 border-b border-slate-200 pb-2 text-base font-extrabold text-sfs-ink">{title}</h2>
       {children}
-    </div>
+    </section>
   );
 }
 
 function DetailItem({ label, value }) {
   return (
     <div>
-      <div style={{ fontSize: 11, color: "#999", marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#0d2b6b" }}>{value}</div>
+      <div className="mb-0.5 text-[11px] font-bold uppercase tracking-wide text-slate-400">{label}</div>
+      <div className="text-sm font-semibold text-sfs-blue">{value}</div>
     </div>
   );
 }
