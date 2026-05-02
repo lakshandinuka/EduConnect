@@ -33,5 +33,7 @@ public class TicketResponse {
     private String slaPolicyName;
     private LocalDateTime slaDueAt;
 
+    private Integer escalated;
+
     private Integer satisfactionScore;
 }
