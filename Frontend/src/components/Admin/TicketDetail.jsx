@@ -71,6 +71,7 @@ const TicketDetail = () => {
       setStatus(res.data.status);
       setError('');
     } catch (err) {
+      console.error('Failed to load ticket', err);
       setError('Failed to load ticket');
     } finally {
       setLoading(false);
@@ -82,7 +83,7 @@ const TicketDetail = () => {
       const res = await api.get('/departments');
       setDepartments(res.data || []);
     } catch (err) {
-      console.error('Failed to fetch departments');
+      console.error('Failed to fetch departments', err);
     }
   };
 
@@ -101,31 +102,39 @@ const TicketDetail = () => {
     return true;
   };
 
-  const runAction = async (action, successMessage = 'Action completed') => {
+  const saveDuplicateResponse = async (responseText) => {
+    if (user?.role !== 'DEPT_ADMIN' || !responseText?.trim()) return;
+
+    try {
+      await api.post('/admin/save-response', {
+        ticketId: String(ticket?.id || ticketId),
+        responseText: responseText.trim(),
+        adminNote: '',
+      });
+    } catch (err) {
+      console.error('Failed to save response to Knowledge Base', err);
+    }
+  };
+
+  const runAction = async (action, successMessage = 'Action completed', options = {}) => {
     if (!requireComment()) return;
+
+    const responseText = commentText.trim();
 
     setActionLoading(true);
 
     try {
       await action();
 
-      if (saveAsStandard && commentText.trim()) {
-         try {
-             await api.post('/admin/save-response', {
-                 ticketId: ticket.id,
-                 responseText: commentText,
-                 adminNote: ''
-             });
-         } catch (e) {
-             console.error("Failed to save response", e);
-         }
+      if (options.allowSaveResponse && saveAsStandard) {
+        await saveDuplicateResponse(responseText);
       }
 
       alert(successMessage);
       setCommentText('');
       setNewDepartmentId('');
-      await fetchTicket();
       setSaveAsStandard(false);
+      await fetchTicket();
     } catch (err) {
       alert(err.response?.data || 'Action failed');
     } finally {
@@ -144,7 +153,8 @@ const TicketDetail = () => {
 
         await api.put(`/admin/tickets/${ticketId}`, payload);
       },
-      'Ticket updated'
+      'Ticket updated',
+      { allowSaveResponse: true }
     );
 
   const handleSubmitApproval = () =>
@@ -154,7 +164,8 @@ const TicketDetail = () => {
           comment: commentText,
         });
       },
-      'Ticket submitted for approval'
+      'Ticket submitted for approval',
+      { allowSaveResponse: true }
     );
 
   const handleApprove = () =>
@@ -333,6 +344,14 @@ const TicketDetail = () => {
                     </h2>
 
                     <div className="mt-5 space-y-5">
+                      {isDeptAdmin && (
+                        <DuplicateDetector
+                          ticketText={ticket.inquiryText}
+                          ticketId={ticket.id}
+                          onSelectResponse={setCommentText}
+                        />
+                      )}
+
                       <label>
                         <span className="sfs-label">
                           Comment <span className="text-red-500">*</span>
@@ -347,24 +366,31 @@ const TicketDetail = () => {
                         />
                       </label>
 
-                      <div className="flex items-center gap-2 mt-2">
-                        <input
-                          type="checkbox"
-                          id="saveStandard"
-                          checked={saveAsStandard}
-                          onChange={(e) => setSaveAsStandard(e.target.checked)}
-                          className="rounded border-slate-300 text-sfs-blue focus:ring-sfs-blue"
-                        />
-                        <label htmlFor="saveStandard" className="text-sm text-slate-600 font-medium cursor-pointer">
-                          Save this response to Knowledge Base for future similar tickets
-                        </label>
-                      </div>
+                      {isDeptAdmin && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <label
+                            htmlFor="saveStandard"
+                            className="flex cursor-pointer items-start gap-3"
+                          >
+                            <input
+                              type="checkbox"
+                              id="saveStandard"
+                              checked={saveAsStandard}
+                              onChange={(e) => setSaveAsStandard(e.target.checked)}
+                              className="mt-0.5 rounded border-slate-300 text-sfs-blue focus:ring-sfs-blue"
+                            />
 
-                      <DuplicateDetector 
-                        ticketText={ticket?.inquiryText} 
-                        ticketId={ticket?.id}
-                        onSelectResponse={(text) => setCommentText(text)} 
-                      />
+                            <span>
+                              <span className="block text-sm font-bold text-sfs-ink">
+                                Save this response to Knowledge Base
+                              </span>
+                              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                                Store this comment as a reusable response for future similar tickets.
+                              </span>
+                            </span>
+                          </label>
+                        </div>
+                      )}
 
                       {canUpdate && (
                         <div className="grid gap-5 md:grid-cols-2">
