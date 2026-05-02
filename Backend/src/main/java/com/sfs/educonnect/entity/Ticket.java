@@ -138,4 +138,14 @@ public class Ticket {
 
     @Column(name = "ticket_created_at")
     private LocalDateTime ticketCreatedAt;
+
+    // --- Priority Prediction Fields ---
+    @Column(name = "predicted_priority")
+    private Integer predictedPriority;
+
+    @Column(name = "predicted_priority_label")
+    private String predictedPriorityLabel;
+
+    @Column(name = "priority_confidence")
+    private Double priorityConfidence;
 }

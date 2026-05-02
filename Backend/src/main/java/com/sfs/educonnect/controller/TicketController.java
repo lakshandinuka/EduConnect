@@ -1,5 +1,6 @@
 package com.sfs.educonnect.controller;
 
+import com.sfs.educonnect.dto.SatisfactionRequest;
 import com.sfs.educonnect.dto.TicketRequest;
 import com.sfs.educonnect.dto.TicketResponse;
 import com.sfs.educonnect.entity.Ticket;
@@ -118,6 +119,21 @@ public class TicketController {
             }
 
             TicketResponse response = ticketService.mapToResponse(ticket);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{ticketId}/satisfaction")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<?> submitSatisfactionScore(
+            @AuthenticationPrincipal User student,
+            @PathVariable Long ticketId,
+            @Valid @RequestBody SatisfactionRequest request) {
+        try {
+            TicketResponse response = ticketService.submitSatisfactionScore(ticketId, student.getId(),
+                    request.getScore());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

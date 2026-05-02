@@ -23,35 +23,42 @@ public class AppointmentTypeController {
         return ResponseEntity.ok(typeRepository.findAll());
     }
 
+    @SuppressWarnings("null")
     @PostMapping
     public ResponseEntity<?> createType(@RequestBody Map<String, Object> payload) {
         AppointmentType type = new AppointmentType();
         type.setTitle((String) payload.get("title"));
         type.setDuration(Integer.valueOf(payload.get("duration").toString()));
         type.setStatus(payload.getOrDefault("status", "Active").toString());
-        
+
         Long deptId = Long.valueOf(payload.get("departmentId").toString());
         type.setDepartment(departmentRepository.findById(deptId).orElseThrow());
-        
+
         return ResponseEntity.ok(typeRepository.save(type));
     }
 
+    @SuppressWarnings("null")
     @PutMapping("/{id}")
     public ResponseEntity<?> updateType(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
+        @SuppressWarnings("null")
         AppointmentType type = typeRepository.findById(id).orElseThrow();
-        
-        if (payload.containsKey("title")) type.setTitle((String) payload.get("title"));
-        if (payload.containsKey("duration")) type.setDuration(Integer.valueOf(payload.get("duration").toString()));
-        if (payload.containsKey("status")) type.setStatus((String) payload.get("status"));
-        
+
+        if (payload.containsKey("title"))
+            type.setTitle((String) payload.get("title"));
+        if (payload.containsKey("duration"))
+            type.setDuration(Integer.valueOf(payload.get("duration").toString()));
+        if (payload.containsKey("status"))
+            type.setStatus((String) payload.get("status"));
+
         if (payload.containsKey("departmentId")) {
             Long deptId = Long.valueOf(payload.get("departmentId").toString());
             type.setDepartment(departmentRepository.findById(deptId).orElseThrow());
         }
-        
+
         return ResponseEntity.ok(typeRepository.save(type));
     }
 
+    @SuppressWarnings("null")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteType(@PathVariable Long id) {
         typeRepository.deleteById(id);

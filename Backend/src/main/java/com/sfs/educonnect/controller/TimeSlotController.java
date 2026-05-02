@@ -33,12 +33,14 @@ public class TimeSlotController {
         return ResponseEntity.ok(timeSlotRepository.findAll());
     }
 
+    @SuppressWarnings("null")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteSlot(@PathVariable Long id) {
         timeSlotRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
 
+    @SuppressWarnings("null")
     @PostMapping
     public ResponseEntity<?> createSlot(@RequestBody Map<String, Object> payload) {
         TimeSlot slot = new TimeSlot();
@@ -48,7 +50,7 @@ public class TimeSlotController {
         slot.setIsAvailable(true);
         Long typeId = Long.valueOf(payload.get("typeId").toString());
         slot.setAppointmentType(typeRepository.findById(typeId).orElseThrow());
-        
+
         return ResponseEntity.ok(timeSlotRepository.save(slot));
     }
 }

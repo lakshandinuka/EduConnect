@@ -12,10 +12,34 @@ const statusClass = {
   REJECTED: 'bg-red-100 text-red-800',
 };
 
+const priorityClass = {
+  LOW: 'bg-green-100 text-green-800',
+  MEDIUM: 'bg-yellow-100 text-yellow-800',
+  HIGH: 'bg-orange-100 text-orange-800',
+  CRITICAL: 'bg-red-100 text-red-800',
+};
+
+const PriorityBadge = ({ label, confidence }) => {
+  const normalizedLabel = label?.toUpperCase();
+  const colorClass = priorityClass[normalizedLabel] || 'bg-slate-100 text-slate-700';
+
+  return (
+    <span className={`sfs-status ${colorClass}`}>
+      {normalizedLabel || 'UNKNOWN'}
+      {confidence > 0 && (
+        <span className="ml-1 opacity-70">
+          ({Math.round(confidence * 100)}%)
+        </span>
+      )}
+    </span>
+  );
+};
+
 const TicketDetail = () => {
   const { ticketId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -29,6 +53,7 @@ const TicketDetail = () => {
     try {
       const url = user?.role === 'STUDENT' ? `/tickets/${ticketId}` : `/admin/tickets/${ticketId}`;
       const res = await api.get(url);
+
       setTicket(res.data);
       setStatus(res.data.status);
       setError('');
@@ -51,6 +76,7 @@ const TicketDetail = () => {
   useEffect(() => {
     fetchTicket();
     fetchDepartments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
 
   const requireComment = () => {
@@ -58,14 +84,18 @@ const TicketDetail = () => {
       alert('Please enter a comment');
       return false;
     }
+
     return true;
   };
 
-  const runAction = async (action) => {
+  const runAction = async (action, successMessage = 'Action completed') => {
     if (!requireComment()) return;
+
     setActionLoading(true);
+
     try {
       await action();
+      alert(successMessage);
       fetchTicket();
       setCommentText('');
       setNewDepartmentId('');
@@ -76,22 +106,49 @@ const TicketDetail = () => {
     }
   };
 
-  const handleUpdateTicket = () => runAction(async () => {
-    const payload = { status, comment: commentText, newDepartmentId: newDepartmentId || null };
-    await api.put(`/admin/tickets/${ticketId}`, payload);
-  });
+  const handleUpdateTicket = () =>
+    runAction(
+      async () => {
+        const payload = {
+          status,
+          comment: commentText,
+          newDepartmentId: newDepartmentId || null,
+        };
 
-  const handleSubmitApproval = () => runAction(async () => {
-    await api.post(`/admin/tickets/${ticketId}/submit-approval`, { comment: commentText });
-  });
+        await api.put(`/admin/tickets/${ticketId}`, payload);
+      },
+      'Ticket updated'
+    );
 
-  const handleApprove = () => runAction(async () => {
-    await api.post(`/admin/tickets/${ticketId}/approve`, { comment: commentText });
-  });
+  const handleSubmitApproval = () =>
+    runAction(
+      async () => {
+        await api.post(`/admin/tickets/${ticketId}/submit-approval`, {
+          comment: commentText,
+        });
+      },
+      'Ticket submitted for approval'
+    );
 
-  const handleReject = () => runAction(async () => {
-    await api.post(`/admin/tickets/${ticketId}/reject`, { comment: commentText });
-  });
+  const handleApprove = () =>
+    runAction(
+      async () => {
+        await api.post(`/admin/tickets/${ticketId}/approve`, {
+          comment: commentText,
+        });
+      },
+      'Ticket approved'
+    );
+
+  const handleReject = () =>
+    runAction(
+      async () => {
+        await api.post(`/admin/tickets/${ticketId}/reject`, {
+          comment: commentText,
+        });
+      },
+      'Ticket rejected'
+    );
 
   const isDeptAdmin = user?.role === 'DEPT_ADMIN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -101,16 +158,20 @@ const TicketDetail = () => {
   const canSubmitApproval = isDeptAdmin && ticket?.status === 'IN_PROGRESS';
   const canApprove = isSuperAdmin && ticket?.status === 'RESOLVED';
   const canReject = isSuperAdmin && ticket?.status === 'RESOLVED';
+
   const showActions = !isStudent && (canUpdate || canSubmitApproval || canApprove || canReject);
 
   return (
     <div className="sfs-page">
       <Navbar />
+
       <main className="sfs-container">
         {loading ? (
           <div className="sfs-panel-pad text-slate-600">Loading ticket...</div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">{error}</div>
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700">
+            {error}
+          </div>
         ) : ticket ? (
           <>
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -118,8 +179,10 @@ const TicketDetail = () => {
                 <button type="button" onClick={() => navigate(-1)} className="sfs-link">
                   Back to Tickets
                 </button>
+
                 <h1 className="sfs-page-title mt-2">Ticket #{ticket.id}</h1>
               </div>
+
               <span className={`sfs-status ${statusClass[ticket.status] || 'bg-slate-100 text-slate-700'}`}>
                 {ticket.status || 'UNKNOWN'}
               </span>
@@ -131,6 +194,7 @@ const TicketDetail = () => {
                   <div className="border-b border-slate-200 px-5 py-4">
                     <h2 className="text-lg font-extrabold text-sfs-ink">Student Information</h2>
                   </div>
+
                   <div className="grid md:grid-cols-3">
                     <InfoCell label="First Name" value={ticket.studentName?.split(' ')[0] || '-'} />
                     <InfoCell label="Last Name" value={ticket.studentName?.split(' ').slice(1).join(' ') || '-'} />
@@ -139,8 +203,12 @@ const TicketDetail = () => {
                     <InfoCell label="Department" value={ticket.departmentName || '-'} />
                     <InfoCell label="Request Type" value={ticket.inquiryTypeName || '-'} />
                   </div>
+
                   <div className="border-t border-slate-200 p-5">
-                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">Description</div>
+                    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Description
+                    </div>
+
                     <p className="mt-2 whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">
                       {ticket.inquiryText || '-'}
                     </p>
@@ -149,20 +217,26 @@ const TicketDetail = () => {
 
                 <section className="sfs-panel-pad">
                   <h2 className="text-lg font-extrabold text-sfs-ink">Activity Log</h2>
+
                   {ticket.comments?.length > 0 ? (
                     <div className="mt-4 space-y-3">
                       {ticket.comments.map((comment) => (
                         <div key={comment.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                           <div className="flex flex-wrap items-center gap-2 text-sm">
                             <span className="font-bold text-sfs-ink">{comment.authorName}</span>
+
                             <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">
                               {comment.authorRole}
                             </span>
+
                             <span className="text-xs text-slate-500">
                               {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : ''}
                             </span>
                           </div>
-                          <p className="mt-2 text-sm leading-relaxed text-slate-700">{comment.text}</p>
+
+                          <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                            {comment.text}
+                          </p>
                         </div>
                       ))}
                     </div>
@@ -176,9 +250,13 @@ const TicketDetail = () => {
                 {showActions && (
                   <section className="sfs-panel-pad">
                     <h2 className="text-lg font-extrabold text-sfs-ink">Admin Actions</h2>
+
                     <div className="mt-5 space-y-5">
                       <label>
-                        <span className="sfs-label">Comment</span>
+                        <span className="sfs-label">
+                          Comment <span className="text-red-500">*</span>
+                        </span>
+
                         <textarea
                           value={commentText}
                           onChange={(e) => setCommentText(e.target.value)}
@@ -192,18 +270,31 @@ const TicketDetail = () => {
                         <div className="grid gap-5 md:grid-cols-2">
                           <label>
                             <span className="sfs-label">Change Status</span>
-                            <select value={status} onChange={(e) => setStatus(e.target.value)} className="sfs-input">
+
+                            <select
+                              value={status}
+                              onChange={(e) => setStatus(e.target.value)}
+                              className="sfs-input"
+                            >
                               <option value="OPEN">Open</option>
                               <option value="IN_PROGRESS">In Progress</option>
                               <option value="RESOLVED">Resolved</option>
                             </select>
                           </label>
+
                           <label>
                             <span className="sfs-label">Reassign Department</span>
-                            <select value={newDepartmentId} onChange={(e) => setNewDepartmentId(e.target.value)} className="sfs-input">
+
+                            <select
+                              value={newDepartmentId}
+                              onChange={(e) => setNewDepartmentId(e.target.value)}
+                              className="sfs-input"
+                            >
                               <option value="">No change</option>
                               {departments.map((dept) => (
-                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                <option key={dept.id} value={dept.id}>
+                                  {dept.name}
+                                </option>
                               ))}
                             </select>
                           </label>
@@ -212,22 +303,45 @@ const TicketDetail = () => {
 
                       <div className="flex flex-wrap justify-end gap-2">
                         {canUpdate && (
-                          <button type="button" onClick={handleUpdateTicket} disabled={actionLoading} className="sfs-btn-primary">
+                          <button
+                            type="button"
+                            onClick={handleUpdateTicket}
+                            disabled={actionLoading}
+                            className="sfs-btn-primary"
+                          >
                             {actionLoading ? 'Updating...' : 'Update Ticket'}
                           </button>
                         )}
+
                         {canSubmitApproval && (
-                          <button type="button" onClick={handleSubmitApproval} disabled={actionLoading} className="sfs-btn-primary">
+                          <button
+                            type="button"
+                            onClick={handleSubmitApproval}
+                            disabled={actionLoading}
+                            className="sfs-btn-primary"
+                          >
                             {actionLoading ? 'Submitting...' : 'Submit for Approval'}
                           </button>
                         )}
+
                         {canApprove && (
-                          <button type="button" onClick={handleApprove} disabled={actionLoading} className="sfs-btn-primary">
+                          <button
+                            type="button"
+                            onClick={handleApprove}
+                            disabled={actionLoading}
+                            className="sfs-btn-primary"
+                          >
                             {actionLoading ? 'Approving...' : 'Approve Ticket'}
                           </button>
                         )}
+
                         {canReject && (
-                          <button type="button" onClick={handleReject} disabled={actionLoading} className="sfs-btn-danger">
+                          <button
+                            type="button"
+                            onClick={handleReject}
+                            disabled={actionLoading}
+                            className="sfs-btn-danger"
+                          >
                             {actionLoading ? 'Rejecting...' : 'Reject Ticket'}
                           </button>
                         )}
@@ -238,18 +352,84 @@ const TicketDetail = () => {
               </div>
 
               <aside className="sfs-panel-pad h-fit">
-                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">Summary</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                  Summary
+                </h2>
+
                 <div className="mt-4 space-y-4">
                   <SummaryItem label="Student" value={ticket.studentName || '-'} />
                   <SummaryItem label="Phone" value={ticket.studentPhoneNumber || '-'} />
+
+                  <SummaryItem label="Severity Level">
+                    {ticket.predictedPriorityLabel ? (
+                      <PriorityBadge
+                        label={ticket.predictedPriorityLabel}
+                        confidence={ticket.priorityConfidence}
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold text-slate-500">Not predicted</span>
+                    )}
+                  </SummaryItem>
+
                   <SummaryItem label="Status">
                     <span className={`sfs-status ${statusClass[ticket.status] || 'bg-slate-100 text-slate-700'}`}>
                       {ticket.status || 'UNKNOWN'}
                     </span>
                   </SummaryItem>
+
                   <SummaryItem label="Service Group" value={ticket.departmentName || 'Unassigned'} />
-                  <SummaryItem label="Assigned To" value={ticket.departmentName ? `${ticket.departmentName} Administrator` : 'Unassigned'} />
+
+                  <SummaryItem
+                    label="Assigned To"
+                    value={ticket.departmentName ? `${ticket.departmentName} Administrator` : 'Unassigned'}
+                  />
+
                   <SummaryItem label="Inquiry Type" value={ticket.inquiryTypeName || '-'} />
+
+                  {!isStudent && (
+                    <SummaryItem label="Available Actions">
+                      <div className="flex flex-col gap-2">
+                        {canSubmitApproval && (
+                          <button
+                            type="button"
+                            onClick={handleSubmitApproval}
+                            disabled={actionLoading}
+                            className="sfs-btn-primary w-full justify-center"
+                          >
+                            Submit for Approval
+                          </button>
+                        )}
+
+                        {canApprove && (
+                          <button
+                            type="button"
+                            onClick={handleApprove}
+                            disabled={actionLoading}
+                            className="sfs-btn-primary w-full justify-center"
+                          >
+                            Approve
+                          </button>
+                        )}
+
+                        {canReject && (
+                          <button
+                            type="button"
+                            onClick={handleReject}
+                            disabled={actionLoading}
+                            className="sfs-btn-danger w-full justify-center"
+                          >
+                            Reject
+                          </button>
+                        )}
+
+                        {!canUpdate && !canSubmitApproval && !canApprove && !canReject && (
+                          <span className="text-sm font-semibold text-slate-500">
+                            No actions available
+                          </span>
+                        )}
+                      </div>
+                    </SummaryItem>
+                  )}
                 </div>
               </aside>
             </div>
@@ -262,15 +442,25 @@ const TicketDetail = () => {
 
 const InfoCell = ({ label, value }) => (
   <div className="border-b border-slate-200 p-5 md:border-r md:[&:nth-child(3n)]:border-r-0">
-    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</div>
-    <div className="mt-1 text-sm font-semibold text-sfs-ink">{value}</div>
+    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+      {label}
+    </div>
+
+    <div className="mt-1 text-sm font-semibold text-sfs-ink">
+      {value}
+    </div>
   </div>
 );
 
 const SummaryItem = ({ label, value, children }) => (
   <div>
-    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</div>
-    <div className="mt-1 text-sm font-semibold text-sfs-ink">{children || value}</div>
+    <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+      {label}
+    </div>
+
+    <div className="mt-1 text-sm font-semibold text-sfs-ink">
+      {children || value}
+    </div>
   </div>
 );
 
