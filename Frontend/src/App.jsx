@@ -64,8 +64,8 @@ const WithNavbar = ({ children }) => (
 );
 
 function AppRoutes() {
-  const location = useLocation();
-  const showChat = location.pathname.startsWith('/kb');
+  const { user } = useAuth();
+  const showChat = user?.role === 'STUDENT';
 
   return (
     <>

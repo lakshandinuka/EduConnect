@@ -33,15 +33,22 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class KnowledgeBaseService {
+    private static final Set<String> CHAT_STOP_WORDS = Set.of(
+            "a", "an", "and", "are", "can", "do", "for", "how", "i", "in", "is", "it",
+            "me", "my", "of", "on", "or", "please", "the", "that", "to", "what", "where"
+    );
+
     private final KbItemRepository kbItemRepository;
     private final CategoryRepository categoryRepository;
     private final PolicyRepository policyRepository;
@@ -214,11 +221,68 @@ public class KnowledgeBaseService {
         if (query.isBlank()) {
             return List.of();
         }
-        return kbItemRepository
-                .searchPublished(KbItemStatus.PUBLISHED, query, PageRequest.of(0, 5))
-                .stream()
+        LinkedHashMap<Long, KbItem> matches = new LinkedHashMap<>();
+        kbItemRepository.searchPublished(KbItemStatus.PUBLISHED, query, PageRequest.of(0, 5))
+                .forEach(item -> matches.put(item.getId(), item));
+
+        List<String> terms = tokenizeForChat(query);
+        if (matches.size() < 5 && !terms.isEmpty()) {
+            kbItemRepository.findTop200ByStatusOrderByUpdatedAtDesc(KbItemStatus.PUBLISHED).stream()
+                    .map(item -> Map.entry(item, chatScore(item, terms)))
+                    .filter(entry -> entry.getValue() > 0)
+                    .sorted(Map.Entry.<KbItem, Integer>comparingByValue(Comparator.reverseOrder()))
+                    .forEach(entry -> {
+                        if (matches.size() < 5) {
+                            matches.putIfAbsent(entry.getKey().getId(), entry.getKey());
+                        }
+                    });
+        }
+
+        return matches.values().stream()
+                .limit(5)
                 .map(KnowledgeBaseMapper::itemDetail)
                 .toList();
+    }
+
+    private List<String> tokenizeForChat(String query) {
+        return List.of(query.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim().split("\\s+"))
+                .stream()
+                .filter(term -> term.length() > 2)
+                .filter(term -> !CHAT_STOP_WORDS.contains(term))
+                .distinct()
+                .toList();
+    }
+
+    private int chatScore(KbItem item, List<String> terms) {
+        String title = searchable(item.getTitle());
+        String description = searchable(item.getDescription());
+        String content = searchable(item.getContent());
+        String category = item.getCategory() == null ? "" : searchable(item.getCategory().getName());
+
+        int score = 0;
+        for (String term : terms) {
+            if (title.contains(term)) {
+                score += 6;
+            }
+            if (description.contains(term)) {
+                score += 4;
+            }
+            if (category.contains(term)) {
+                score += 3;
+            }
+            if (content.contains(term)) {
+                score += 1;
+            }
+        }
+        return score;
+    }
+
+    private String searchable(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("<[^>]+>", " ")
+                .toLowerCase(Locale.ROOT);
     }
 
     private List<Map<String, Object>> mapItems(List<KbItem> items) {

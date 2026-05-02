@@ -1,24 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import AnnouncementList from '../Student/AnnouncementList';
-import AnnouncementForm from './AnnouncementForm';
-import AdminMessages from './AdminMessages';
 import { useAuth } from '../../context/AuthContext';
+import AnnouncementList from '../Student/AnnouncementList';
+import AdminMessages from './AdminMessages';
+import AnnouncementForm from './AnnouncementForm';
 
-export default function AdminDashboard() {
+export default function AnnouncementDashboard() {
   const [announcements, setAnnouncements] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editData, setEditData] = useState(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-
   const adminName = user?.fullName || 'Admin';
 
   const fetchAnnouncements = async () => {
     try {
       const res = await api.get('/announcements');
-      setAnnouncements(res.data);
+      setAnnouncements(res.data || []);
     } catch (err) {
       console.error('Failed to load announcements');
     }
@@ -29,66 +28,49 @@ export default function AdminDashboard() {
       navigate('/login');
       return;
     }
-    localStorage.setItem("adminNotif", "false");
-    window.dispatchEvent(new Event("notifUpdate"));
+    localStorage.setItem('adminNotif', 'false');
+    window.dispatchEvent(new Event('notifUpdate'));
     fetchAnnouncements();
   }, [user, navigate]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this announcement?")) return;
+    if (!window.confirm('Delete this announcement?')) return;
     try {
       await api.delete(`/admin/announcements/${id}`);
       fetchAnnouncements();
     } catch (err) {
-      alert("Failed to delete");
+      alert('Failed to delete');
     }
   };
 
-  const handleEdit = (ann) => {
-    setEditData(ann);
+  const handleEdit = (announcement) => {
+    setEditData(announcement);
     setShowForm(true);
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      {/* HEADER */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Admin Dashboard</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <div style={{
-            padding: '12px',
-            borderRadius: '8px',
-            background: '#10b981',
-            color: 'white',
-            fontWeight: '600',
-            boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
-          }}>
-            Logged in as: {adminName}
-          </div>
-
-          <button
-            className="btn btn-primary"
-            onClick={() => { setEditData(null); setShowForm(true); }}
-            style={buttonStyle}
-            onMouseEnter={hoverButtonEnter}
-            onMouseLeave={hoverButtonLeave}
-          >
-            + New Announcement
-          </button>
+    <div className="mx-auto max-w-7xl space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="sfs-page-title">Announcement Dashboard</h1>
+          <p className="sfs-muted mt-1">Logged in as {adminName}</p>
         </div>
+        <button
+          type="button"
+          className="sfs-btn-primary"
+          onClick={() => {
+            setEditData(null);
+            setShowForm(true);
+          }}
+        >
+          New Announcement
+        </button>
       </div>
 
-      {/* ANNOUNCEMENTS */}
-      <div style={{ marginTop: '30px' }}>
-        <AnnouncementList
-          announcements={announcements}
-          isAdmin={true}
-          onDelete={handleDelete}
-          onEdit={handleEdit}
-        />
-      </div>
+      <section>
+        <AnnouncementList announcements={announcements} isAdmin onDelete={handleDelete} onEdit={handleEdit} />
+      </section>
 
-      {/* FORM */}
       {showForm && (
         <AnnouncementForm
           isOpen={showForm}
@@ -98,30 +80,7 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* MESSAGES */}
-      <div style={{ marginTop: '40px' }}>
-        <AdminMessages />
-      </div>
+      <AdminMessages />
     </div>
   );
 }
-
-// BUTTON STYLES
-const buttonStyle = {
-  padding: '8px 16px',
-  borderRadius: '8px',
-  border: 'none',
-  background: '#2563eb',
-  color: 'white',
-  cursor: 'pointer',
-  transition: 'background 0.2s, transform 0.2s'
-};
-
-const hoverButtonEnter = e => {
-  e.currentTarget.style.background = '#1d4ed8';
-  e.currentTarget.style.transform = 'translateY(-1px)';
-};
-const hoverButtonLeave = e => {
-  e.currentTarget.style.background = '#2563eb';
-  e.currentTarget.style.transform = 'translateY(0)';
-};

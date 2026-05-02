@@ -10,12 +10,20 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class FaqService {
+    private static final Set<String> CHAT_STOP_WORDS = Set.of(
+            "a", "an", "and", "are", "can", "do", "for", "how", "i", "in", "is", "it",
+            "me", "my", "of", "on", "or", "please", "the", "that", "to", "what", "where"
+    );
+
     private final FaqRepository faqRepository;
 
     public List<Map<String, Object>> listPublished() {
@@ -71,12 +79,61 @@ public class FaqService {
         if (query.isBlank()) {
             return List.of();
         }
-        return faqRepository
-                .searchPublished(FaqStatus.PUBLISHED, query, PageRequest.of(0, 5))
-                .stream()
+        LinkedHashMap<Long, Faq> matches = new LinkedHashMap<>();
+        faqRepository.searchPublished(FaqStatus.PUBLISHED, query, PageRequest.of(0, 5)).stream()
                 .sorted(Comparator.comparing(Faq::getSortOrder, Comparator.nullsLast(Integer::compareTo)))
+                .forEach(faq -> matches.put(faq.getId(), faq));
+
+        List<String> terms = tokenizeForChat(query);
+        if (matches.size() < 5 && !terms.isEmpty()) {
+            faqRepository.findByStatusOrderBySortOrderAscUpdatedAtDesc(FaqStatus.PUBLISHED).stream()
+                    .map(faq -> Map.entry(faq, chatScore(faq, terms)))
+                    .filter(entry -> entry.getValue() > 0)
+                    .sorted(Map.Entry.<Faq, Integer>comparingByValue(Comparator.reverseOrder()))
+                    .forEach(entry -> {
+                        if (matches.size() < 5) {
+                            matches.putIfAbsent(entry.getKey().getId(), entry.getKey());
+                        }
+                    });
+        }
+
+        return matches.values().stream()
+                .limit(5)
                 .map(KnowledgeBaseMapper::faq)
                 .toList();
+    }
+
+    private List<String> tokenizeForChat(String query) {
+        return List.of(query.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim().split("\\s+"))
+                .stream()
+                .filter(term -> term.length() > 2)
+                .filter(term -> !CHAT_STOP_WORDS.contains(term))
+                .distinct()
+                .toList();
+    }
+
+    private int chatScore(Faq faq, List<String> terms) {
+        String question = searchable(faq.getQuestion());
+        String answer = searchable(faq.getAnswer());
+        String category = searchable(faq.getCategory());
+
+        int score = 0;
+        for (String term : terms) {
+            if (question.contains(term)) {
+                score += 6;
+            }
+            if (category.contains(term)) {
+                score += 3;
+            }
+            if (answer.contains(term)) {
+                score += 1;
+            }
+        }
+        return score;
+    }
+
+    private String searchable(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
     }
 
     private Faq find(Long id) {
