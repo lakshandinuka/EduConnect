@@ -66,16 +66,15 @@ public class TicketService {
     public TicketResponse createTicket(Long studentId, TicketRequest request) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
+
         Department department = departmentRepository.findById(request.getDepartmentId())
                 .orElseThrow(() -> new RuntimeException("Department not found"));
 
         InquiryType inquiryType = inquiryTypeRepository.findById(request.getInquiryTypeId())
                 .orElseThrow(() -> new RuntimeException("Inquiry type not found"));
 
-        // ---- Priority prediction (merged) ----
         String processedText = preprocessText(request.getInquiryText());
         PriorityPredictionService.PriorityResult result = priorityPredictionService.predictPriority(processedText);
-        // ------------------------------------
 
         Ticket ticket = new Ticket();
         ticket.setStudent(student);
@@ -84,12 +83,10 @@ public class TicketService {
         ticket.setInquiryText(request.getInquiryText());
         ticket.setTicketStatus(TicketStatus.OPEN);
 
-        // Store prediction results
         ticket.setPredictedPriority(result.priority());
         ticket.setPredictedPriorityLabel(result.priorityLabel());
         ticket.setPriorityConfidence(result.confidence());
 
-        // ---- SLA policy auto attach ----
         SLAPriority slaPriority = convertToSLAPriority(result.priorityLabel());
 
         SLAPolicy slaPolicy = slaPolicyRepository
@@ -110,7 +107,6 @@ public class TicketService {
                     )
             );
         }
-        // --------------------------------
 
         ticket = ticketRepository.save(ticket);
         return mapToResponse(ticket);
@@ -137,23 +133,22 @@ public class TicketService {
             case "minute":
             case "minutes":
                 return startTime.plusMinutes(value);
-
             case "hour":
             case "hours":
                 return startTime.plusHours(value);
-
             case "day":
             case "days":
                 return startTime.plusDays(value);
-
             default:
                 return startTime.plusHours(value);
         }
     }
 
     private String preprocessText(String raw) {
-        if (raw == null)
+        if (raw == null) {
             return "";
+        }
+
         return raw.toLowerCase().replaceAll("[^a-z0-9\\s]", "").trim();
     }
 
@@ -161,6 +156,7 @@ public class TicketService {
     public List<TicketResponse> getTicketsByStudent(Long studentId) {
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
+
         List<Ticket> tickets = ticketRepository.findByStudentOrderByCreatedAtDesc(student);
         return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
@@ -180,6 +176,7 @@ public class TicketService {
         }
 
         String filePath = fileStorageService.storeFile(file);
+
         Attachment attachment = new Attachment();
         attachment.setTicket(ticket);
         attachment.setFileName(file.getOriginalFilename());
@@ -208,19 +205,34 @@ public class TicketService {
 
     public TicketResponse mapToResponse(Ticket ticket) {
         TicketResponse response = new TicketResponse();
+
         response.setId(ticket.getId());
-        response.setStudentName(ticket.getStudent().getFullName());
-        response.setStudentEmail(ticket.getStudent().getEmail());
-        response.setStudentPhoneNumber(ticket.getStudent().getPhoneNumber());
-        response.setInquiryTypeId(ticket.getInquiryType().getId());
-        response.setInquiryTypeName(ticket.getInquiryType().getName());
-        response.setDepartmentName(ticket.getDepartment().getName());
+
+        response.setStudentName(ticket.getStudent() != null ? ticket.getStudent().getFullName() : ticket.getStudentName());
+        response.setStudentEmail(ticket.getStudent() != null ? ticket.getStudent().getEmail() : ticket.getStudentEmail());
+        response.setStudentPhoneNumber(ticket.getStudent() != null ? ticket.getStudent().getPhoneNumber() : null);
+
+        response.setInquiryTypeId(ticket.getInquiryType() != null ? ticket.getInquiryType().getId() : null);
+        response.setInquiryTypeName(ticket.getInquiryType() != null ? ticket.getInquiryType().getName() : "-");
+
+        response.setDepartmentName(ticket.getDepartment() != null ? ticket.getDepartment().getName() : ticket.getDepartmentName());
         response.setInquiryText(ticket.getInquiryText());
-        response.setStatus(ticket.getTicketStatus().name());
+        response.setStatus(ticket.getTicketStatus() != null ? ticket.getTicketStatus().name() : "UNKNOWN");
+
         response.setCreatedAt(ticket.getCreatedAt());
         response.setUpdatedAt(ticket.getUpdatedAt());
+
         response.setPredictedPriorityLabel(ticket.getPredictedPriorityLabel());
         response.setPriorityConfidence(ticket.getPriorityConfidence());
+
+        response.setSlaDueAt(ticket.getSlaDueAt());
+
+        if (ticket.getSlaPolicy() != null) {
+            response.setSlaPolicyId(ticket.getSlaPolicy().getId());
+            response.setSlaPolicyName(ticket.getSlaPolicy().getName());
+        }
+
+        response.setEscalated(ticket.getEscalated());
         response.setSatisfactionScore(ticket.getSatisfactionScore());
 
         List<AttachmentDto> attachmentDtos = ticket.getAttachments().stream()
@@ -233,32 +245,29 @@ public class TicketService {
                     return dto;
                 })
                 .collect(Collectors.toList());
+
         response.setAttachments(attachmentDtos);
 
         List<CommentDto> commentDtos = ticket.getComments().stream()
                 .map(c -> {
                     CommentDto dto = new CommentDto();
                     dto.setId(c.getId());
-                    dto.setAuthorName(c.getAuthor().getFullName());
-                    dto.setAuthorRole(c.getAuthor().getRole().name());
+                    dto.setAuthorName(c.getAuthor() != null ? c.getAuthor().getFullName() : "Unknown");
+                    dto.setAuthorRole(c.getAuthor() != null ? c.getAuthor().getRole().name() : "UNKNOWN");
                     dto.setText(c.getText());
                     dto.setCreatedAt(c.getCreatedAt());
                     return dto;
                 })
                 .collect(Collectors.toList());
-        response.setComments(commentDtos);
 
-        if (ticket.getSlaPolicy() != null) {
-            response.setSlaPolicyId(ticket.getSlaPolicy().getId());
-            response.setSlaPolicyName(ticket.getSlaPolicy().getName());
-        }
-        response.setSlaDueAt(ticket.getSlaDueAt());
+        response.setComments(commentDtos);
 
         return response;
     }
 
     public List<TicketResponse> getTicketsForAdmin(User admin, TicketStatus status) {
         List<Ticket> tickets;
+
         if (admin.getRole() == Role.SUPER_ADMIN) {
             if (status != null) {
                 tickets = ticketRepository.findAllByTicketStatusOrderByCreatedAtDesc(status);
@@ -267,14 +276,17 @@ public class TicketService {
             }
         } else if (admin.getRole() == Role.DEPT_ADMIN && admin.getDepartment() != null) {
             if (status != null) {
-                tickets = ticketRepository.findByDepartmentAndTicketStatusOrderByCreatedAtDesc(admin.getDepartment(),
-                        status);
+                tickets = ticketRepository.findByDepartmentAndTicketStatusOrderByCreatedAtDesc(
+                        admin.getDepartment(),
+                        status
+                );
             } else {
                 tickets = ticketRepository.findByDepartmentOrderByCreatedAtDesc(admin.getDepartment());
             }
         } else {
             throw new RuntimeException("Invalid admin role");
         }
+
         return tickets.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
@@ -284,48 +296,65 @@ public class TicketService {
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
         if (admin.getRole() == Role.DEPT_ADMIN) {
-            if (!ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
+            if (admin.getDepartment() == null ||
+                    !ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
                 throw new RuntimeException("You are not authorized to update this ticket");
             }
         } else if (admin.getRole() != Role.SUPER_ADMIN) {
             throw new RuntimeException("Only admins can update tickets");
         }
 
+        boolean isEscalatedTicket =
+                ticket.getTicketStatus() == TicketStatus.ESCALATED ||
+                (ticket.getEscalated() != null && ticket.getEscalated() == 1);
+
         if (request.getStatus() != null) {
             TicketStatus newStatus = request.getStatus();
-            TicketStatus currentStatus = ticket.getTicketStatus();
 
-            // CRITICAL: Prevent bypassing approval workflow
-            // APPROVED and REJECTED statuses can ONLY be set via approveTicket() and
-            // rejectTicket() methods
             if (newStatus == TicketStatus.APPROVED || newStatus == TicketStatus.REJECTED) {
                 throw new RuntimeException("Cannot directly set status to " + newStatus +
                         ". Use the proper approval/rejection endpoints instead.");
             }
 
-            // Validate status transitions for DEPT_ADMIN
             if (admin.getRole() == Role.DEPT_ADMIN) {
-                // DEPT_ADMIN can only set to OPEN or IN_PROGRESS (not RESOLVED - use
-                // submitForApproval)
-                if (newStatus == TicketStatus.RESOLVED) {
-                    throw new RuntimeException("Department admin cannot directly set status to RESOLVED. " +
-                            "Use the submit-approval endpoint instead.");
+                boolean allowedDeptAdminTransition =
+                        newStatus == TicketStatus.OPEN ||
+                        newStatus == TicketStatus.IN_PROGRESS ||
+                        newStatus == TicketStatus.ESCALATED;
+
+                if (isEscalatedTicket) {
+                    allowedDeptAdminTransition =
+                            newStatus == TicketStatus.OPEN ||
+                            newStatus == TicketStatus.IN_PROGRESS ||
+                            newStatus == TicketStatus.ESCALATED;
+                }
+
+                if (!allowedDeptAdminTransition) {
+                    throw new RuntimeException(
+                            "Department admin can only update tickets to OPEN, IN_PROGRESS, or ESCALATED. " +
+                            "For resolution, use the submit-approval endpoint."
+                    );
                 }
             }
 
             ticket.setTicketStatus(newStatus);
+
+            if (newStatus == TicketStatus.OPEN || newStatus == TicketStatus.IN_PROGRESS) {
+                ticket.setEscalated(0);
+            }
         }
 
         if (request.getNewDepartmentId() != null) {
             Department newDept = departmentRepository.findById(request.getNewDepartmentId())
                     .orElseThrow(() -> new RuntimeException("Department not found"));
+
             ticket.setDepartment(newDept);
         }
 
         ticket = ticketRepository.save(ticket);
 
         if (request.getComment() != null && !request.getComment().trim().isEmpty()) {
-            addComment(ticket, admin, request.getComment());
+            addComment(ticket, admin, request.getComment().trim());
         }
 
         return mapToResponse(ticket);
@@ -337,20 +366,28 @@ public class TicketService {
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
         if (admin.getRole() != Role.DEPT_ADMIN ||
+                admin.getDepartment() == null ||
                 !ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
             throw new RuntimeException("Only department admin can submit for approval");
         }
 
+        boolean isEscalatedTicket =
+                ticket.getTicketStatus() == TicketStatus.ESCALATED ||
+                (ticket.getEscalated() != null && ticket.getEscalated() == 1);
+
         if (ticket.getTicketStatus() != TicketStatus.IN_PROGRESS
-                && ticket.getTicketStatus() != TicketStatus.OPEN) {
-            throw new RuntimeException("Ticket must be in progress to submit for approval");
+                && ticket.getTicketStatus() != TicketStatus.OPEN
+                && ticket.getTicketStatus() != TicketStatus.ESCALATED
+                && !isEscalatedTicket) {
+            throw new RuntimeException("Ticket must be OPEN, IN_PROGRESS, or ESCALATED to submit for approval");
         }
 
         ticket.setTicketStatus(TicketStatus.RESOLVED);
+        ticket.setEscalated(0);
         ticket = ticketRepository.save(ticket);
 
         if (comment != null && !comment.trim().isEmpty()) {
-            addComment(ticket, admin, comment);
+            addComment(ticket, admin, comment.trim());
         }
 
         return mapToResponse(ticket);
@@ -373,7 +410,7 @@ public class TicketService {
         ticket = ticketRepository.save(ticket);
 
         if (comment != null && !comment.trim().isEmpty()) {
-            addComment(ticket, superAdmin, comment);
+            addComment(ticket, superAdmin, comment.trim());
         }
 
         return mapToResponse(ticket);
@@ -396,7 +433,7 @@ public class TicketService {
         ticket = ticketRepository.save(ticket);
 
         if (comment != null && !comment.trim().isEmpty()) {
-            addComment(ticket, superAdmin, comment);
+            addComment(ticket, superAdmin, comment.trim());
         }
 
         return mapToResponse(ticket);
@@ -429,7 +466,8 @@ public class TicketService {
 
         if (admin.getRole() == Role.DEPT_ADMIN || admin.getRole() == Role.SUPER_ADMIN) {
             if (admin.getRole() == Role.DEPT_ADMIN
-                    && !ticket.getDepartment().getId().equals(admin.getDepartment().getId())) {
+                    && (admin.getDepartment() == null ||
+                    !ticket.getDepartment().getId().equals(admin.getDepartment().getId()))) {
                 throw new RuntimeException("Access denied");
             }
         } else {
@@ -443,23 +481,21 @@ public class TicketService {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-        // Ensure the ticket belongs to the logged-in student
         if (!ticket.getStudent().getId().equals(studentId)) {
             throw new RuntimeException("You are not authorized to rate this ticket");
         }
 
-        // Only approved tickets can be rated
         if (ticket.getTicketStatus() != TicketStatus.APPROVED) {
             throw new RuntimeException("Satisfaction score can only be submitted for approved tickets");
         }
 
-        // Prevent re-rating
         if (ticket.getSatisfactionScore() != null) {
             throw new RuntimeException("Satisfaction score already submitted");
         }
 
         ticket.setSatisfactionScore(score);
         ticket = ticketRepository.save(ticket);
+
         return mapToResponse(ticket);
     }
 }
