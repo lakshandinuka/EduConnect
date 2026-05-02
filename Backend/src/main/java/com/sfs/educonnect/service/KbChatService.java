@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class KbChatService {
     private static final Pattern SOURCE_PATTERN = Pattern.compile("\\[(KB|FAQ|PAGE)-(\\d+)]");
+    private static final String FALLBACK_RESPONSE = "Sorry, I can't help you with that. Please refer the knowledgebase for more information.";
 
     private final KnowledgeBaseService knowledgeBaseService;
     private final FaqService faqService;
@@ -38,6 +39,9 @@ public class KbChatService {
 
     @Value("${gemini.model:gemini-1.5-flash}")
     private String model;
+
+    @Value("${gemini.api-key:}")
+    private String configuredApiKey;
 
     public Map<String, Object> message(ChatMessageRequest request) throws Exception {
         String text = request.getMessage() == null ? "" : request.getMessage().trim();
@@ -50,28 +54,77 @@ public class KbChatService {
         List<Map<String, Object>> pages = searchPages(text);
         String context = buildContext(kbItems, faqs, pages);
 
-        String apiKey = environment.getProperty("GEMINI_API_KEY");
-        if (apiKey == null || apiKey.isBlank()) {
-            apiKey = environment.getProperty("gemini.api-key", "");
+        if (kbItems.isEmpty() && faqs.isEmpty() && pages.isEmpty()) {
+            return response(FALLBACK_RESPONSE, List.of());
         }
-        if (apiKey == null || apiKey.isBlank()) {
-            return response("HelpDesk AI is not configured yet. Please set GEMINI_API_KEY on the backend.", List.of());
+
+        String apiKey = resolveApiKey();
+        if (apiKey.isBlank()) {
+            return response(FALLBACK_RESPONSE, List.of());
         }
 
         String prompt = """
                 You are a helpful student support chatbot. Answer the student's question using only the knowledge base context below.
-                If the answer is not in the context, say you do not have that information.
+                If the answer is not in the context, answer exactly: %s
                 Include source references in brackets like [KB-1], [FAQ-2], or [PAGE-3] when you use a source.
+                Keep the answer concise and student-friendly.
 
                 %s
 
                 Question: %s
-                """.formatted(context, text);
+                """.formatted(FALLBACK_RESPONSE, context, text);
 
-        String generated = callGemini(apiKey, prompt);
+        String generated;
+        try {
+            generated = callGemini(apiKey, prompt);
+        } catch (Exception e) {
+            return response(FALLBACK_RESPONSE, List.of());
+        }
         List<Map<String, Object>> sources = extractSources(generated, kbItems, faqs, pages);
         String cleaned = SOURCE_PATTERN.matcher(generated).replaceAll("").trim();
-        return response(cleaned.isBlank() ? "I could not generate an answer from the knowledge base." : cleaned, sources);
+        if (cleaned.isBlank() || isFallbackAnswer(cleaned)) {
+            return response(FALLBACK_RESPONSE, List.of());
+        }
+        return response(cleaned, sources);
+    }
+
+    private String resolveApiKey() {
+        String[] candidates = {
+                environment.getProperty("GEMINI_API_KEY"),
+                configuredApiKey,
+                environment.getProperty("gemini.api-key")
+        };
+        for (String candidate : candidates) {
+            String normalized = normalizeSecret(candidate);
+            if (!normalized.isBlank()) {
+                return normalized;
+            }
+        }
+        return "";
+    }
+
+    private String normalizeSecret(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.contains("${")) {
+            return "";
+        }
+        if ((trimmed.startsWith("\"") && trimmed.endsWith("\""))
+                || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        return trimmed;
+    }
+
+    private boolean isFallbackAnswer(String answer) {
+        String lower = answer.toLowerCase();
+        return lower.contains("do not have that information")
+                || lower.contains("don't have that information")
+                || lower.contains("not in the context")
+                || lower.contains("cannot answer")
+                || lower.contains("can't answer");
     }
 
     private String callGemini(String apiKey, String prompt) throws Exception {
@@ -180,10 +233,32 @@ public class KbChatService {
                 default -> null;
             };
             if (source != null && sources.stream().noneMatch(existing -> existing.get("type").equals(source.get("type")) && existing.get("id").equals(source.get("id")))) {
+                source.put("url", sourceUrl(type, id, source));
                 sources.add(source);
             }
         }
         return sources;
+    }
+
+    private String sourceUrl(String sourceType, Long id, Map<String, Object> source) {
+        return switch (sourceType) {
+            case "KB" -> "/kb/item/" + id;
+            case "FAQ" -> "/kb/faq?faqId=" + id;
+            case "PAGE" -> pageUrl(source.get("title"));
+            default -> "/kb";
+        };
+    }
+
+    private String pageUrl(Object pageKey) {
+        if (pageKey == null) {
+            return "/kb";
+        }
+        String key = pageKey.toString().trim().toLowerCase();
+        return switch (key) {
+            case "home" -> "/home";
+            case "about" -> "/home#about";
+            default -> "/kb";
+        };
     }
 
     private Map<String, Object> findSource(List<Map<String, Object>> candidates, Long id, String type, String titleKey) {

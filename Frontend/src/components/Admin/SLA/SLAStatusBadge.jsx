@@ -2,13 +2,12 @@ import React from 'react';
 
 const priorityClasses = {
   low: 'bg-slate-50 text-slate-600 border border-slate-200',
-  medium: 'bg-blue-50 text-blue-700 border border-blue-200',
+  medium: 'bg-sfs-blue/10 text-sfs-blue border border-sfs-blue/20',
   high: 'bg-orange-50 text-orange-700 border border-orange-200',
   critical: 'bg-red-50 text-red-700 border border-red-200 font-bold',
 };
 
 const SLAStatusBadge = ({ type, value }) => {
-  // STATUS BADGE
   if (type === 'status') {
     const normalizedValue = value || 'INACTIVE';
     const isActive = normalizedValue === 'ACTIVE';
@@ -33,7 +32,6 @@ const SLAStatusBadge = ({ type, value }) => {
     );
   }
 
-  // PRIORITY BADGE
   if (type === 'priority') {
     const normalizedValue = value || 'Low';
     const cls =

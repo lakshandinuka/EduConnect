@@ -32,6 +32,8 @@ public interface KbItemRepository extends JpaRepository<KbItem, Long>, JpaSpecif
 
     List<KbItem> findTop200ByStatusAndCategoryIdOrderByUpdatedAtDesc(KbItemStatus status, Long categoryId);
 
+    List<KbItem> findTop200ByStatusOrderByUpdatedAtDesc(KbItemStatus status);
+
     long countByCategoryIdAndStatus(Long categoryId, KbItemStatus status);
 
     boolean existsByCategoryId(Long categoryId);

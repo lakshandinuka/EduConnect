@@ -97,22 +97,22 @@ const ManageTypes = () => {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in max-w-5xl mx-auto relative">
+    <div className="space-y-6 max-w-5xl mx-auto relative">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900">Appointment Types</h1>
-          <p className="text-gray-500 mt-1">Create and manage the types of appointments students can book.</p>
+          <h1 className="sfs-page-title">Appointment Types</h1>
+          <p className="sfs-muted mt-1">Create and manage the types of appointments students can book.</p>
         </div>
-        <button onClick={openAddModal} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm transition-colors">
+        <button onClick={openAddModal} className="sfs-btn-primary gap-2">
           <Plus size={20} /> Add New Type
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="sfs-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-100 text-gray-600 text-sm">
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
                 <th className="p-4 font-semibold">Title</th>
                 <th className="p-4 font-semibold">Department</th>
                 <th className="p-4 font-semibold">Duration</th>
@@ -122,15 +122,15 @@ const ManageTypes = () => {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {types.length === 0 ? (
-                 <tr><td colSpan="5" className="p-8 text-center text-gray-500">No appointment types found.</td></tr>
+                 <tr><td colSpan="5" className="p-8 text-center text-slate-500">No appointment types found.</td></tr>
               ) : types.map(type => (
-                <tr key={type.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-4 font-bold text-gray-800 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0"><List size={16} /></div>
+                <tr key={type.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="p-4 font-bold text-sfs-ink flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-sfs-blue/10 flex items-center justify-center text-sfs-blue shrink-0"><List size={16} /></div>
                     {type.title}
                   </td>
-                  <td className="p-4 text-gray-600 font-medium">{type.department?.name || 'Unknown'}</td>
-                  <td className="p-4 text-gray-600">{type.duration} mins</td>
+                  <td className="p-4 text-slate-600 font-medium">{type.department?.name || 'Unknown'}</td>
+                  <td className="p-4 text-slate-600">{type.duration} mins</td>
                   <td className="p-4">
                     <span className={`px-2.5 py-1 rounded-md text-xs font-bold ${type.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                       {type.status || 'Active'}
@@ -138,7 +138,7 @@ const ManageTypes = () => {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => openEditModal(type)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16} /></button>
+                      <button onClick={() => openEditModal(type)} className="p-2 text-sfs-blue hover:bg-sfs-blue/10 rounded-lg transition-colors"><Edit2 size={16} /></button>
                       <button onClick={() => handleDelete(type.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16} /></button>
                     </div>
                   </td>
@@ -151,29 +151,29 @@ const ManageTypes = () => {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl border border-gray-100 overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b border-gray-100">
-               <h2 className="text-xl font-bold text-gray-800">{isEditing ? "Edit Appointment Type" : "Add Appointment Type"}</h2>
+          <div className="sfs-panel w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-slate-200">
+               <h2 className="text-xl font-bold text-sfs-ink">{isEditing ? "Edit Appointment Type" : "Add Appointment Type"}</h2>
                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={20}/></button>
             </div>
             
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
                {error && <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg">{error}</div>}
                <div>
-                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Title</label>
+                 <label className="sfs-label">Title</label>
                  <input 
                    required type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                   className="sfs-input"
                    placeholder="e.g. Visa Consulting"
                  />
                </div>
                
                <div>
-                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Department</label>
+                 <label className="sfs-label">Department</label>
                  <select 
                    value={formData.departmentId} onChange={e => setFormData({...formData, departmentId: e.target.value})}
                    required
-                   className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none bg-white transition-all"
+                   className="sfs-input"
                  >
                    {departments.map(d => (
                       <option key={d.id} value={d.id}>{d.name}</option>
@@ -184,17 +184,17 @@ const ManageTypes = () => {
                
                <div className="grid grid-cols-2 gap-5">
                  <div>
-                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Duration (mins)</label>
+                   <label className="sfs-label">Duration (mins)</label>
                    <input 
                      type="number" min="5" step="5" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})}
-                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                     className="sfs-input"
                    />
                  </div>
                  <div>
-                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Status</label>
+                   <label className="sfs-label">Status</label>
                    <select 
                      value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})}
-                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none bg-white transition-all"
+                     className="sfs-input"
                    >
                      <option value="Active">Active</option>
                      <option value="Inactive">Inactive</option>
@@ -203,8 +203,8 @@ const ManageTypes = () => {
                </div>
                
                <div className="pt-5 border-t border-gray-100 flex justify-end gap-3 mt-8">
-                 <button type="button" onClick={() => setShowModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-100 transition-colors">Cancel</button>
-                 <button type="submit" disabled={departments.length===0} className="px-5 py-2.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-colors disabled:opacity-50">
+                 <button type="button" onClick={() => setShowModal(false)} className="sfs-btn-secondary">Cancel</button>
+                 <button type="submit" disabled={departments.length===0} className="sfs-btn-primary">
                    {isEditing ? "Save Changes" : "Save Type"}
                  </button>
                </div>

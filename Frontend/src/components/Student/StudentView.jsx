@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../services/api';
 import AnnouncementList from './AnnouncementList';
 
@@ -9,30 +9,32 @@ export default function StudentView() {
   const [itNumber, setItNumber] = useState('');
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchData();
-    localStorage.setItem("studentNotif", "false");
-    window.dispatchEvent(new Event("notifUpdate"));
-  }, []);
-
   const fetchData = async () => {
     try {
-      const res1 = await api.get('/announcements');
-      setAnnouncements(res1.data);
-      const res2 = await api.get('/messages');
-      setMessages(res2.data);
+      const [announcementsRes, messagesRes] = await Promise.all([
+        api.get('/announcements'),
+        api.get('/messages')
+      ]);
+      setAnnouncements(announcementsRes.data || []);
+      setMessages(messagesRes.data || []);
     } catch (err) {
       console.error(err);
     }
   };
 
+  useEffect(() => {
+    fetchData();
+    localStorage.setItem('studentNotif', 'false');
+    window.dispatchEvent(new Event('notifUpdate'));
+  }, []);
+
   const handleSend = async () => {
     if (itNumber.length !== 10) {
-      setError("Invalid IT Number (must be 10 characters)");
+      setError('Invalid IT Number. It must be 10 characters.');
       return;
     }
     if (!message.trim()) {
-      setError("Message cannot be empty");
+      setError('Message cannot be empty.');
       return;
     }
     setError('');
@@ -43,9 +45,8 @@ export default function StudentView() {
         content: message
       });
 
-      localStorage.setItem("adminNotif", "true");
-      window.dispatchEvent(new Event("notifUpdate"));
-
+      localStorage.setItem('adminNotif', 'true');
+      window.dispatchEvent(new Event('notifUpdate'));
       alert('Message sent!');
       setMessage('');
       setItNumber('');
@@ -57,132 +58,78 @@ export default function StudentView() {
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#f9fafb' }}>
-      <h1 style={{ textAlign: 'center', marginBottom: '30px', color: '#111827' }}>Announcements</h1>
+    <div className="mx-auto max-w-7xl space-y-8">
+      <div>
+        <h1 className="sfs-page-title">Announcements</h1>
+        <p className="sfs-muted mt-1">Read current notices and send messages to the admin team.</p>
+      </div>
 
       <AnnouncementList announcements={announcements} />
 
-      <div style={{ marginTop: '40px' }}>
-        <h2 style={{ color: '#111827' }}>Messages & Replies</h2>
+      <section className="sfs-panel-pad">
+        <h2 className="text-xl font-extrabold text-sfs-ink">Messages & Replies</h2>
 
-       {messages.length === 0 ? (
-         <p style={{ textAlign: 'center', color: '#6b7280', padding: '20px' }}>No messages yet.</p>
-       ) : (
-         messages.map((msg) => (
-           <div
-             key={msg.id}
-             style={{
-               border: '2px solid #d1d5db', // thicker border
-               padding: '15px',
-               marginTop: '15px',
-               borderRadius: '10px',
-               backgroundColor: '#ffffff',
-               boxShadow: '0 2px 6px rgba(0,0,0,0.05)',
-               transition: 'transform 0.2s, box-shadow 0.2s',
-               cursor: 'default'
-             }}
-             onMouseEnter={e => {
-               e.currentTarget.style.transform = 'translateY(-2px)';
-               e.currentTarget.style.boxShadow = '0 6px 15px rgba(0,0,0,0.1)';
-             }}
-             onMouseLeave={e => {
-               e.currentTarget.style.transform = 'translateY(0)';
-               e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.05)';
-             }}
-           >
-             <p><b>IT Number:</b> {msg.sender}</p>
-             <p><b>Message:</b> {msg.content}</p>
-             <p><b>Admin Reply:</b> {msg.reply ? msg.reply : <i>No reply yet</i>}</p>
-           </div>
-         ))
-       )}
-      </div>
+        {messages.length === 0 ? (
+          <div className="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-slate-600">
+            No messages yet.
+          </div>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {messages.map((msg) => (
+              <div key={msg.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm text-slate-700">
+                  <span className="font-bold text-sfs-ink">IT Number:</span> {msg.sender}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  <span className="font-bold text-sfs-ink">Message:</span> {msg.content}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  <span className="font-bold text-sfs-ink">Admin Reply:</span>{' '}
+                  {msg.reply ? msg.reply : <span className="italic text-slate-500">No reply yet</span>}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
-      <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'center' }}>
-        <div style={{
-          background: '#ffffff',
-          padding: '25px',
-          borderRadius: '12px',
-          boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
-          width: '400px',
-          transition: 'box-shadow 0.3s'
-        }}
-        onMouseEnter={e => e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.15)'}
-        onMouseLeave={e => e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)'}
-        >
-          <h3 style={{ marginBottom: '15px', color: '#111827' }}>Send Message to Admin</h3>
-
-          <input
-            type="text"
-            placeholder="Enter your IT Number"
-            value={itNumber}
-            maxLength={10}
-            onChange={(e) => setItNumber(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '12px',
-              marginBottom: '12px',
-              borderRadius: '8px',
-              border: '1px solid #d1d5db',
-              outline: 'none',
-              transition: 'border-color 0.3s'
-            }}
-            onFocus={e => e.currentTarget.style.borderColor = '#10b981'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
-          />
+      <section className="sfs-panel-pad mx-auto max-w-xl">
+        <h2 className="text-xl font-extrabold text-sfs-ink">Send Message to Admin</h2>
+        <div className="mt-5 space-y-4">
+          <label>
+            <span className="sfs-label">IT Number</span>
+            <input
+              type="text"
+              placeholder="Enter your IT Number"
+              value={itNumber}
+              maxLength={10}
+              onChange={(e) => setItNumber(e.target.value)}
+              className="sfs-input"
+            />
+          </label>
 
           {error && (
-            <p style={{
-              color: '#b91c1c',
-              background: '#fef2f2',
-              padding: '8px',
-              borderRadius: '6px',
-              fontWeight: '600',
-              marginBottom: '10px',
-              textAlign: 'center',
-              animation: 'fadeIn 0.4s ease'
-            }}>{error}</p>
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {error}
+            </div>
           )}
 
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Type your message..."
-            style={{
-              width: '100%',
-              height: '100px',
-              padding: '12px',
-              borderRadius: '8px',
-              border: '1px solid #d1d5db',
-              outline: 'none',
-              resize: 'vertical',
-              transition: 'border-color 0.3s'
-            }}
-            onFocus={e => e.currentTarget.style.borderColor = '#10b981'}
-            onBlur={e => e.currentTarget.style.borderColor = '#d1d5db'}
-          />
+          <label>
+            <span className="sfs-label">Message</span>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Type your message..."
+              rows={4}
+              className="sfs-textarea"
+            />
+          </label>
 
-          <button
-            onClick={handleSend}
-            style={{
-              marginTop: '12px',
-              width: '100%',
-              padding: '12px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#10b981',
-              color: 'white',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'background 0.3s, transform 0.2s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#059669'; e.currentTarget.style.transform = 'translateY(-2px)'}}
-            onMouseLeave={e => { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.transform = 'translateY(0)'}}
-          >
+          <button type="button" onClick={handleSend} className="sfs-btn-primary w-full">
             Send
           </button>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
