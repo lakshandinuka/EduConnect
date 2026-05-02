@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
+import DuplicateDetector from './DuplicateDetector';
 
 const statusClass = {
   OPEN: 'bg-amber-100 text-amber-800',
@@ -40,6 +41,16 @@ const formatDateTime = (value) => {
   return value ? new Date(value).toLocaleString() : '—';
 };
 
+const getErrorMessage = (err) => {
+  const data = err?.response?.data;
+
+  if (typeof data === 'string') return data;
+  if (data?.message) return data.message;
+  if (data?.error) return data.error;
+
+  return 'Action failed';
+};
+
 const TicketDetail = () => {
   const { ticketId } = useParams();
   const navigate = useNavigate();
@@ -53,6 +64,7 @@ const TicketDetail = () => {
   const [newDepartmentId, setNewDepartmentId] = useState('');
   const [departments, setDepartments] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [saveAsStandard, setSaveAsStandard] = useState(false);
 
   const fetchTicket = async () => {
     try {
@@ -69,7 +81,8 @@ const TicketDetail = () => {
       setStatus(res.data.status);
       setError('');
     } catch (err) {
-      setError('Failed to load ticket');
+      console.error('Failed to load ticket:', err);
+      setError(getErrorMessage(err) || 'Failed to load ticket');
     } finally {
       setLoading(false);
     }
@@ -80,7 +93,7 @@ const TicketDetail = () => {
       const res = await api.get('/departments');
       setDepartments(res.data || []);
     } catch (err) {
-      console.error('Failed to fetch departments');
+      console.error('Failed to fetch departments:', err);
     }
   };
 
@@ -88,7 +101,36 @@ const TicketDetail = () => {
     fetchTicket();
     fetchDepartments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketId]);
+  }, [ticketId, user?.role]);
+
+  const isDeptAdmin = user?.role === 'DEPT_ADMIN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isStudent = user?.role === 'STUDENT';
+
+  const isEscalatedTicket =
+    ticket?.status === 'ESCALATED' ||
+    ticket?.escalated === 1 ||
+    ticket?.escalated === true ||
+    (ticket?.slaDueAt &&
+      new Date(ticket.slaDueAt) < new Date() &&
+      !['RESOLVED', 'APPROVED', 'REJECTED'].includes(ticket?.status));
+
+  const canUpdate =
+    isDeptAdmin &&
+    (['OPEN', 'IN_PROGRESS', 'ESCALATED'].includes(ticket?.status) ||
+      isEscalatedTicket);
+
+  const canSubmitApproval =
+    isDeptAdmin &&
+    (['OPEN', 'IN_PROGRESS', 'ESCALATED'].includes(ticket?.status) ||
+      isEscalatedTicket);
+
+  const canApprove = isSuperAdmin && ticket?.status === 'RESOLVED';
+
+  const canReject = isSuperAdmin && ticket?.status === 'RESOLVED';
+
+  const showActions =
+    !isStudent && (canUpdate || canSubmitApproval || canApprove || canReject);
 
   const requireComment = () => {
     if (!commentText.trim()) {
@@ -99,19 +141,42 @@ const TicketDetail = () => {
     return true;
   };
 
-  const runAction = async (action, successMessage = 'Action completed') => {
+  const saveDuplicateResponse = async (responseText) => {
+    if (user?.role !== 'DEPT_ADMIN' || !responseText?.trim()) return;
+
+    try {
+      await api.post('/admin/save-response', {
+        ticketId: String(ticket?.id || ticketId),
+        responseText: responseText.trim(),
+        adminNote: '',
+      });
+    } catch (err) {
+      console.error('Failed to save response to Knowledge Base', err);
+    }
+  };
+
+  const runAction = async (action, successMessage = 'Action completed', options = {}) => {
     if (!requireComment()) return;
+
+    const responseText = commentText.trim();
 
     setActionLoading(true);
 
     try {
       await action();
+
+      if (options.allowSaveResponse && saveAsStandard) {
+        await saveDuplicateResponse(responseText);
+      }
+
       alert(successMessage);
       setCommentText('');
       setNewDepartmentId('');
+      setSaveAsStandard(false);
       await fetchTicket();
     } catch (err) {
-      alert(err.response?.data || 'Action failed');
+      console.error('Ticket action failed:', err);
+      alert(getErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
@@ -122,30 +187,31 @@ const TicketDetail = () => {
       async () => {
         const payload = {
           status,
-          comment: commentText,
+          comment: commentText.trim(),
           newDepartmentId: newDepartmentId || null,
         };
 
         await api.put(`/admin/tickets/${ticketId}`, payload);
       },
-      'Ticket updated'
+      isEscalatedTicket ? 'Escalated ticket response saved' : 'Ticket updated'
     );
 
   const handleSubmitApproval = () =>
     runAction(
       async () => {
         await api.post(`/admin/tickets/${ticketId}/submit-approval`, {
-          comment: commentText,
+          comment: commentText.trim(),
         });
       },
-      'Ticket submitted for approval'
+      'Ticket submitted for approval',
+      { allowSaveResponse: true }
     );
 
   const handleApprove = () =>
     runAction(
       async () => {
         await api.post(`/admin/tickets/${ticketId}/approve`, {
-          comment: commentText,
+          comment: commentText.trim(),
         });
       },
       'Ticket approved'
@@ -155,31 +221,11 @@ const TicketDetail = () => {
     runAction(
       async () => {
         await api.post(`/admin/tickets/${ticketId}/reject`, {
-          comment: commentText,
+          comment: commentText.trim(),
         });
       },
       'Ticket rejected'
     );
-
-  const isDeptAdmin = user?.role === 'DEPT_ADMIN';
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const isStudent = user?.role === 'STUDENT';
-
-  const canUpdate =
-    isDeptAdmin &&
-    (ticket?.status === 'OPEN' || ticket?.status === 'IN_PROGRESS');
-
-  const canSubmitApproval =
-    isDeptAdmin && ticket?.status === 'IN_PROGRESS';
-
-  const canApprove =
-    isSuperAdmin && ticket?.status === 'RESOLVED';
-
-  const canReject =
-    isSuperAdmin && ticket?.status === 'RESOLVED';
-
-  const showActions =
-    !isStudent && (canUpdate || canSubmitApproval || canApprove || canReject);
 
   return (
     <div className="sfs-page">
@@ -213,15 +259,24 @@ const TicketDetail = () => {
 
               <span
                 className={`sfs-status ${
-                  statusClass[ticket.status] || 'bg-slate-100 text-slate-700'
+                  isEscalatedTicket
+                    ? 'bg-red-100 text-red-800'
+                    : statusClass[ticket.status] || 'bg-slate-100 text-slate-700'
                 }`}
               >
-                {ticket.status || 'UNKNOWN'}
+                {isEscalatedTicket ? 'ESCALATED' : ticket.status || 'UNKNOWN'}
               </span>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
               <div className="space-y-6">
+                {isEscalatedTicket && isDeptAdmin && (
+                  <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                    This ticket has breached its SLA and is escalated. Add a response
+                    below and move it to In Progress or submit it for approval.
+                  </div>
+                )}
+
                 <section className="sfs-panel overflow-hidden">
                   <div className="border-b border-slate-200 px-5 py-4">
                     <h2 className="text-lg font-extrabold text-sfs-ink">
@@ -317,6 +372,14 @@ const TicketDetail = () => {
                     </h2>
 
                     <div className="mt-5 space-y-5">
+                      {isDeptAdmin && (
+                        <DuplicateDetector
+                          ticketText={ticket.inquiryText}
+                          ticketId={ticket.id}
+                          onSelectResponse={setCommentText}
+                        />
+                      )}
+
                       <label>
                         <span className="sfs-label">
                           Comment <span className="text-red-500">*</span>
@@ -327,9 +390,39 @@ const TicketDetail = () => {
                           onChange={(e) => setCommentText(e.target.value)}
                           rows={4}
                           className="sfs-textarea"
-                          placeholder="Enter your comment here..."
+                          placeholder={
+                            isEscalatedTicket
+                              ? 'Enter your response for the escalated ticket...'
+                              : 'Enter your comment here...'
+                          }
                         />
                       </label>
+
+                      {isDeptAdmin && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <label
+                            htmlFor="saveStandard"
+                            className="flex cursor-pointer items-start gap-3"
+                          >
+                            <input
+                              type="checkbox"
+                              id="saveStandard"
+                              checked={saveAsStandard}
+                              onChange={(e) => setSaveAsStandard(e.target.checked)}
+                              className="mt-0.5 rounded border-slate-300 text-sfs-blue focus:ring-sfs-blue"
+                            />
+
+                            <span>
+                              <span className="block text-sm font-bold text-sfs-ink">
+                                Save this response to Knowledge Base
+                              </span>
+                              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                                Store this comment as a reusable response for future similar tickets.
+                              </span>
+                            </span>
+                          </label>
+                        </div>
+                      )}
 
                       {canUpdate && (
                         <div className="grid gap-5 md:grid-cols-2">
@@ -344,6 +437,7 @@ const TicketDetail = () => {
                               <option value="OPEN">Open</option>
                               <option value="IN_PROGRESS">In Progress</option>
                               <option value="RESOLVED">Resolved</option>
+                              <option value="ESCALATED">Escalated</option>
                             </select>
                           </label>
 
@@ -378,7 +472,11 @@ const TicketDetail = () => {
                             disabled={actionLoading}
                             className="sfs-btn-primary"
                           >
-                            {actionLoading ? 'Updating...' : 'Update Ticket'}
+                            {actionLoading
+                              ? 'Updating...'
+                              : isEscalatedTicket
+                                ? 'Respond to Escalation'
+                                : 'Update Ticket'}
                           </button>
                         )}
 
@@ -463,14 +561,26 @@ const TicketDetail = () => {
                     </span>
                   </SummaryItem>
 
+                  <SummaryItem label="Escalation">
+                    <span
+                      className={`text-sm font-semibold ${
+                        isEscalatedTicket ? 'text-red-700' : 'text-slate-500'
+                      }`}
+                    >
+                      {isEscalatedTicket ? 'Escalated' : 'Not escalated'}
+                    </span>
+                  </SummaryItem>
+
                   <SummaryItem label="Status">
                     <span
                       className={`sfs-status ${
-                        statusClass[ticket.status] ||
-                        'bg-slate-100 text-slate-700'
+                        isEscalatedTicket
+                          ? 'bg-red-100 text-red-800'
+                          : statusClass[ticket.status] ||
+                            'bg-slate-100 text-slate-700'
                       }`}
                     >
-                      {ticket.status || 'UNKNOWN'}
+                      {isEscalatedTicket ? 'ESCALATED' : ticket.status || 'UNKNOWN'}
                     </span>
                   </SummaryItem>
 
@@ -496,6 +606,17 @@ const TicketDetail = () => {
                   {!isStudent && (
                     <SummaryItem label="Available Actions">
                       <div className="flex flex-col gap-2">
+                        {canUpdate && isEscalatedTicket && (
+                          <button
+                            type="button"
+                            onClick={handleUpdateTicket}
+                            disabled={actionLoading}
+                            className="sfs-btn-primary w-full justify-center"
+                          >
+                            Respond to Escalation
+                          </button>
+                        )}
+
                         {canSubmitApproval && (
                           <button
                             type="button"
