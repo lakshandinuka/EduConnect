@@ -3,11 +3,11 @@ import EscalationRuleBuilder from './EscalationRuleBuilder';
 
 const defaultFormData = {
     name: '',
-    department: 'IT Support',
-    priority: 'Low',
+    department: 'Computer Science',
+    priority: 'MEDIUM',
     status: 'ACTIVE',
-    responseTime: { value: 1, unit: 'hours' },
-    resolutionTime: { value: 4, unit: 'hours' },
+    responseTime: { value: 1, unit: 'minutes' },
+    resolutionTime: { value: 1, unit: 'minutes' },
     escalationRules: []
 };
 
@@ -52,6 +52,10 @@ const SLAForm = ({ initialData, onSubmit, onCancel }) => {
                 [field]: field === 'value' ? Number(value) : value
             }
         }));
+
+        if (errors[type]) {
+            setErrors((prev) => ({ ...prev, [type]: '' }));
+        }
     };
 
     const handleRulesChange = (rules) => {
@@ -94,9 +98,7 @@ const SLAForm = ({ initialData, onSubmit, onCancel }) => {
         >
             <div className="flex flex-col gap-8">
 
-                {/* BASIC INFO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-semibold text-slate-700">
                             Policy Name *
@@ -107,25 +109,35 @@ const SLAForm = ({ initialData, onSubmit, onCancel }) => {
                             value={formData.name}
                             onChange={handleChange}
                             className="w-full border rounded-xl px-4 py-3"
+                            placeholder="e.g. CS Medium SLA"
                         />
                         {errors.name && <span className="text-red-500 text-xs">{errors.name}</span>}
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label>Status</label>
-                        <select name="status" value={formData.status} onChange={handleChange}>
+                        <label className="text-sm font-semibold text-slate-700">Status</label>
+                        <select
+                            name="status"
+                            value={formData.status}
+                            onChange={handleChange}
+                            className="w-full border rounded-xl px-4 py-3"
+                        >
                             <option value="ACTIVE">Active</option>
                             <option value="INACTIVE">Inactive</option>
                         </select>
                     </div>
                 </div>
 
-                {/* DEPT + PRIORITY */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                    <div>
-                        <label>Department</label>
-                        <select name="department" value={formData.department} onChange={handleChange}>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold text-slate-700">Department</label>
+                        <select
+                            name="department"
+                            value={formData.department}
+                            onChange={handleChange}
+                            className="w-full border rounded-xl px-4 py-3"
+                        >
+                            <option value="Computer Science">Computer Science</option>
                             <option value="IT Support">IT Support</option>
                             <option value="Student Services">Student Services</option>
                             <option value="Finance">Finance</option>
@@ -133,48 +145,91 @@ const SLAForm = ({ initialData, onSubmit, onCancel }) => {
                         </select>
                     </div>
 
-                    <div>
-                        <label>Priority</label>
-                        <select name="priority" value={formData.priority} onChange={handleChange}>
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold text-slate-700">Priority</label>
+                        <select
+                            name="priority"
+                            value={formData.priority}
+                            onChange={handleChange}
+                            className="w-full border rounded-xl px-4 py-3"
+                        >
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="CRITICAL">Critical</option>
                         </select>
                     </div>
                 </div>
 
-                {/* TIMES */}
-                <div className="grid grid-cols-2 gap-6">
-
-                    <div>
-                        <label>Response Time</label>
-                        <input
-                            type="number"
-                            value={formData.responseTime.value}
-                            onChange={(e) => handleTimeChange('responseTime', 'value', e.target.value)}
-                        />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold text-slate-700">Response Time</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                min="1"
+                                value={formData.responseTime.value}
+                                onChange={(e) => handleTimeChange('responseTime', 'value', e.target.value)}
+                                className="w-1/2 border rounded-xl px-4 py-3"
+                            />
+                            <select
+                                value={formData.responseTime.unit}
+                                onChange={(e) => handleTimeChange('responseTime', 'unit', e.target.value)}
+                                className="w-1/2 border rounded-xl px-4 py-3"
+                            >
+                                <option value="minutes">Minutes</option>
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                            </select>
+                        </div>
+                        {errors.responseTime && <span className="text-red-500 text-xs">{errors.responseTime}</span>}
                     </div>
 
-                    <div>
-                        <label>Resolution Time</label>
-                        <input
-                            type="number"
-                            value={formData.resolutionTime.value}
-                            onChange={(e) => handleTimeChange('resolutionTime', 'value', e.target.value)}
-                        />
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-semibold text-slate-700">Resolution Time</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="number"
+                                min="1"
+                                value={formData.resolutionTime.value}
+                                onChange={(e) => handleTimeChange('resolutionTime', 'value', e.target.value)}
+                                className="w-1/2 border rounded-xl px-4 py-3"
+                            />
+                            <select
+                                value={formData.resolutionTime.unit}
+                                onChange={(e) => handleTimeChange('resolutionTime', 'unit', e.target.value)}
+                                className="w-1/2 border rounded-xl px-4 py-3"
+                            >
+                                <option value="minutes">Minutes</option>
+                                <option value="hours">Hours</option>
+                                <option value="days">Days</option>
+                            </select>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                            Defines how long before the ticket is automatically escalated.
+                        </p>
+                        {errors.resolutionTime && <span className="text-red-500 text-xs">{errors.resolutionTime}</span>}
                     </div>
                 </div>
 
-                {/* ESCALATION */}
-                <EscalationRuleBuilder
-                    rules={formData.escalationRules}
-                    onChange={handleRulesChange}
-                />
+                <div>
+                    <div className="mb-3">
+                        <h3 className="text-lg font-semibold text-slate-800">Escalation Rules</h3>
+                        <p className="text-sm text-gray-500">
+                            Optional advanced rules. Basic SLA auto-escalation is handled automatically by the system.
+                        </p>
+                    </div>
 
-                {/* BUTTONS */}
+                    <EscalationRuleBuilder
+                        rules={formData.escalationRules}
+                        onChange={handleRulesChange}
+                    />
+                </div>
+
                 <div className="flex justify-end gap-4">
-                    <button type="button" onClick={onCancel}>Cancel</button>
+                    <button type="button" onClick={onCancel}>
+                        Cancel
+                    </button>
                     <button type="submit">
                         {initialData ? 'Update' : 'Create'}
                     </button>

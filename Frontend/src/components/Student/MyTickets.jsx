@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
 
 const statusClass = {
@@ -9,32 +10,68 @@ const statusClass = {
   RESOLVED: 'bg-green-100 text-green-800',
   APPROVED: 'bg-emerald-100 text-emerald-800',
   REJECTED: 'bg-red-100 text-red-800',
+  ESCALATED: 'bg-red-100 text-red-800',
 };
 
 const MyTickets = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const getErrorMessage = (err) => {
+    const data = err?.response?.data;
+
+    if (typeof data === 'string') {
+      return data;
+    }
+
+    if (data?.message) {
+      return data.message;
+    }
+
+    if (data?.error) {
+      return data.error;
+    }
+
+    return 'Failed to load tickets';
+  };
+
   const fetchTickets = async () => {
     try {
       setLoading(true);
+      setError('');
+
       const res = await api.get('/tickets');
       setTickets(Array.isArray(res.data) ? res.data : []);
-      setError('');
     } catch (err) {
-      setError('Failed to load tickets');
+      console.error('My tickets error:', err);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTickets();
-  }, []);
+    if (user && user.role !== 'STUDENT') {
+      navigate('/admin/dashboard', { replace: true });
+      return;
+    }
+
+    if (user?.role === 'STUDENT') {
+      fetchTickets();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, navigate]);
 
   const handleDelete = async (ticketId) => {
-    if (!window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this ticket? This action cannot be undone.'
+      )
+    ) {
       return;
     }
 
@@ -42,7 +79,7 @@ const MyTickets = () => {
       await api.delete(`/tickets/${ticketId}`);
       setTickets((prev) => prev.filter((ticket) => ticket.id !== ticketId));
     } catch (err) {
-      alert(err.response?.data || 'Failed to delete ticket');
+      alert(getErrorMessage(err));
     }
   };
 
@@ -98,7 +135,8 @@ const MyTickets = () => {
 
                       <span
                         className={`sfs-status ${
-                          statusClass[ticket.status] || 'bg-slate-100 text-slate-700'
+                          statusClass[ticket.status] ||
+                          'bg-slate-100 text-slate-700'
                         }`}
                       >
                         {ticket.status || 'UNKNOWN'}
