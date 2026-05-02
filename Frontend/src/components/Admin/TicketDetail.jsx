@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
+import DuplicateDetector from './DuplicateDetector';
 
 const statusClass = {
   OPEN: 'bg-amber-100 text-amber-800',
@@ -63,6 +64,7 @@ const TicketDetail = () => {
   const [newDepartmentId, setNewDepartmentId] = useState('');
   const [departments, setDepartments] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [saveAsStandard, setSaveAsStandard] = useState(false);
 
   const fetchTicket = async () => {
     try {
@@ -139,16 +141,38 @@ const TicketDetail = () => {
     return true;
   };
 
-  const runAction = async (action, successMessage = 'Action completed') => {
+  const saveDuplicateResponse = async (responseText) => {
+    if (user?.role !== 'DEPT_ADMIN' || !responseText?.trim()) return;
+
+    try {
+      await api.post('/admin/save-response', {
+        ticketId: String(ticket?.id || ticketId),
+        responseText: responseText.trim(),
+        adminNote: '',
+      });
+    } catch (err) {
+      console.error('Failed to save response to Knowledge Base', err);
+    }
+  };
+
+  const runAction = async (action, successMessage = 'Action completed', options = {}) => {
     if (!requireComment()) return;
+
+    const responseText = commentText.trim();
 
     setActionLoading(true);
 
     try {
       await action();
+
+      if (options.allowSaveResponse && saveAsStandard) {
+        await saveDuplicateResponse(responseText);
+      }
+
       alert(successMessage);
       setCommentText('');
       setNewDepartmentId('');
+      setSaveAsStandard(false);
       await fetchTicket();
     } catch (err) {
       console.error('Ticket action failed:', err);
@@ -179,7 +203,8 @@ const TicketDetail = () => {
           comment: commentText.trim(),
         });
       },
-      'Ticket submitted for approval'
+      'Ticket submitted for approval',
+      { allowSaveResponse: true }
     );
 
   const handleApprove = () =>
@@ -347,6 +372,14 @@ const TicketDetail = () => {
                     </h2>
 
                     <div className="mt-5 space-y-5">
+                      {isDeptAdmin && (
+                        <DuplicateDetector
+                          ticketText={ticket.inquiryText}
+                          ticketId={ticket.id}
+                          onSelectResponse={setCommentText}
+                        />
+                      )}
+
                       <label>
                         <span className="sfs-label">
                           Comment <span className="text-red-500">*</span>
@@ -364,6 +397,32 @@ const TicketDetail = () => {
                           }
                         />
                       </label>
+
+                      {isDeptAdmin && (
+                        <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <label
+                            htmlFor="saveStandard"
+                            className="flex cursor-pointer items-start gap-3"
+                          >
+                            <input
+                              type="checkbox"
+                              id="saveStandard"
+                              checked={saveAsStandard}
+                              onChange={(e) => setSaveAsStandard(e.target.checked)}
+                              className="mt-0.5 rounded border-slate-300 text-sfs-blue focus:ring-sfs-blue"
+                            />
+
+                            <span>
+                              <span className="block text-sm font-bold text-sfs-ink">
+                                Save this response to Knowledge Base
+                              </span>
+                              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                                Store this comment as a reusable response for future similar tickets.
+                              </span>
+                            </span>
+                          </label>
+                        </div>
+                      )}
 
                       {canUpdate && (
                         <div className="grid gap-5 md:grid-cols-2">
