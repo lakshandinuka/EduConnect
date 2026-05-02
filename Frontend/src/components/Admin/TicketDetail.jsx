@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import Navbar from '../../components/Navbar';
+import DuplicateDetector from './DuplicateDetector';
 
 const statusClass = {
   OPEN: 'bg-amber-100 text-amber-800',
@@ -53,6 +54,7 @@ const TicketDetail = () => {
   const [newDepartmentId, setNewDepartmentId] = useState('');
   const [departments, setDepartments] = useState([]);
   const [actionLoading, setActionLoading] = useState(false);
+  const [saveAsStandard, setSaveAsStandard] = useState(false);
 
   const fetchTicket = async () => {
     try {
@@ -106,10 +108,24 @@ const TicketDetail = () => {
 
     try {
       await action();
+
+      if (saveAsStandard && commentText.trim()) {
+         try {
+             await api.post('/admin/save-response', {
+                 ticketId: ticket.id,
+                 responseText: commentText,
+                 adminNote: ''
+             });
+         } catch (e) {
+             console.error("Failed to save response", e);
+         }
+      }
+
       alert(successMessage);
       setCommentText('');
       setNewDepartmentId('');
       await fetchTicket();
+      setSaveAsStandard(false);
     } catch (err) {
       alert(err.response?.data || 'Action failed');
     } finally {
@@ -330,6 +346,25 @@ const TicketDetail = () => {
                           placeholder="Enter your comment here..."
                         />
                       </label>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          id="saveStandard"
+                          checked={saveAsStandard}
+                          onChange={(e) => setSaveAsStandard(e.target.checked)}
+                          className="rounded border-slate-300 text-sfs-blue focus:ring-sfs-blue"
+                        />
+                        <label htmlFor="saveStandard" className="text-sm text-slate-600 font-medium cursor-pointer">
+                          Save this response to Knowledge Base for future similar tickets
+                        </label>
+                      </div>
+
+                      <DuplicateDetector 
+                        ticketText={ticket?.inquiryText} 
+                        ticketId={ticket?.id}
+                        onSelectResponse={(text) => setCommentText(text)} 
+                      />
 
                       {canUpdate && (
                         <div className="grid gap-5 md:grid-cols-2">
