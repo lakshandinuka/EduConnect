@@ -147,7 +147,7 @@ export default function HomePage() {
       )}
 
       {/* Hero */}
-      <section className="relative">
+      <section className="relative w-full">
         <div
           className="h-[70vh] min-h-[520px] w-full bg-cover bg-center"
           style={{ backgroundImage: `url(${(editMode ? draft.hero.imageSrc : content.hero.imageSrc)})` }}

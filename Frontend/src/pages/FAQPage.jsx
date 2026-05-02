@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import KbLayout from '../components/kb/KbLayout';
 import { getFaqs } from '../services/faqService';
 import { useToast, ToastContainer } from '../components/common/Toast';
@@ -7,6 +8,7 @@ import { useToast, ToastContainer } from '../components/common/Toast';
 export default function FAQPage() {
   const [faqs, setFaqs] = useState([]);
   const [openId, setOpenId] = useState(null);
+  const [searchParams] = useSearchParams();
   const { toasts, showToast, removeToast } = useToast();
 
   useEffect(() => {
@@ -21,6 +23,19 @@ export default function FAQPage() {
     })();
   }, []);
 
+  useEffect(() => {
+    const faqId = Number(searchParams.get('faqId'));
+    if (!faqId || faqs.length === 0) return;
+
+    setOpenId(faqId);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`faq-${faqId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    });
+  }, [faqs, searchParams]);
+
   return (
     <KbLayout
       title="Frequently Asked Questions"
@@ -33,6 +48,7 @@ export default function FAQPage() {
           return (
             <motion.div
               key={faq.id}
+              id={`faq-${faq.id}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2 }}

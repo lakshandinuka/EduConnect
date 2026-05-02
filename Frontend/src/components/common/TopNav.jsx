@@ -22,7 +22,7 @@ export default function TopNav() {
           <img
             src="/assets/sfs-academy.png"
             alt="SFS Academy"
-            className="h-12 w-auto"
+            className="h-full w-auto"
             loading="eager"
           />
           <span className="sr-only">SFS EDUCONNECT Home</span>
